@@ -1,0 +1,129 @@
+/* Estilos específicos para el dashboard */
+.stat-box {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .stat-title {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+  }
+  
+  .stat-comparison {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  .stat-up {
+    color: var(--success);
+  }
+  
+  .stat-down {
+    color: var(--danger);
+  }
+  
+  .stat-comparison i {
+    margin-right: 0.25rem;
+  }
+  
+  /* Lista de tareas en el dashboard */
+  .dashboard-task-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .dashboard-task-item:last-child {
+    border-bottom: none;
+  }
+  
+  .dashboard-task-status {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  
+  .status-active {
+    background-color: var(--success);
+  }
+  
+  .status-paused {
+    background-color: var(--warning);
+  }
+  
+  .status-done {
+    background-color: var(--secondary);
+  }
+  
+  .dashboard-task-title {
+    flex: 1;
+    font-size: 0.9rem;
+  }
+  
+  .dashboard-task-date {
+    color: #999;
+    font-size: 0.8rem;
+  }
+  
+  /* Lista de empleados activos */
+  .dashboard-employee-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .dashboard-employee-item:last-child {
+    border-bottom: none;
+  }
+  
+  .dashboard-employee-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #eee;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: #666;
+  }
+  
+  .dashboard-employee-info {
+    flex: 1;
+  }
+  
+  .dashboard-employee-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .dashboard-employee-position {
+    font-size: 0.8rem;
+    color: #666;
+  }
+  
+  .dashboard-employee-status {
+    font-size: 0.8rem;
+    background-color: #e0f7fa;
+    color: #0097a7;
+    padding: 2px 8px;
+    border-radius: 12px;
+  }

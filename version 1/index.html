@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prestotel - Sistema de Gestión Hotelera</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/winter.css" />
+  <link rel="stylesheet" href="css/chemicals.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/shifts.css" />
+  <link rel="stylesheet" href="css/employee-cards.css" /> <!-- Nuevo archivo CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="icon" href="assets/images/favicon.ico" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+      <div class="logo">
+        <img src="assets/images/logo.svg" alt="Prestotel Logo" />
+        <h1>PRESTOTEL</h1>
+      </div>
+      <ul class="menu">
+        <li><a href="#dashboard-view" class="active"><i class="fas fa-home"></i> Inicio</a></li>
+        <li><a href="#tasks-view"><i class="fas fa-tasks"></i> Tareas</a></li>
+        <li><a href="#inventory-view"><i class="fas fa-boxes"></i> Stock</a></li>
+        <li><a href="#orders-view"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
+        <li><a href="#chemicals-view"><i class="fas fa-flask"></i> Químicos</a></li>
+        <li><a href="#employees-view"><i class="fas fa-users"></i> Empleados</a></li>
+        <li><a href="#shifts-view"><i class="fas fa-calendar-alt"></i> Turnos</a></li>
+        <li><a href="#winter-view"><i class="fas fa-snowflake"></i> Invierno</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="main-content">
+      <header class="topbar">
+        <button id="toggle-menu" class="menu-btn"><i class="fas fa-bars"></i></button>
+        <h2 id="page-title">Panel de Control</h2>
+        <div class="topbar-actions">
+          <button id="notifications-btn" class="icon-btn"><i class="fas fa-bell"></i></button>
+          <div class="user-menu">
+            <span>Admin</span>
+            <img src="assets/images/avatar.png" alt="Usuario" class="avatar">
+          </div>
+        </div>
+      </header>
+
+      <!-- Notificaciones (inicialmente oculto) -->
+      <div id="notifications-panel" class="notifications-panel hidden">
+        <h3>Notificaciones</h3>
+        <div class="notification-list">
+          <!-- Se llenará dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Contenedor principal para los módulos -->
+      <section class="content">
+        <!-- Panel general (inicio) -->
+        <div id="dashboard-view" class="module-view">
+          <!-- El contenido se generará dinámicamente desde app.js -->
+        </div>
+
+        <!-- Módulo de Tareas -->
+        <div id="tasks-view" class="module-view hidden">
+          <!-- El contenido se generará dinámicamente desde tasks.js -->
+        </div>
+
+        <!-- Módulo de Inventario -->
+        <div id="inventory-view" class="module-view hidden">
+          <!-- El contenido se generará dinámicamente desde inventory.js -->
+        </div>
+
+        <!-- Módulo de Pedidos -->
+        <div id="orders-view" class="module-view hidden">
+          <!-- El contenido se generará dinámicamente desde orders.js -->
+        </div>
+
+        <!-- Módulo de Productos Químicos -->
+        <div id="chemicals-view" class="module-view hidden">
+          <!-- El contenido se generará dinámicamente desde chemicals.js -->
+        </div>
+
+        <!-- Módulo de Empleados -->
+        <div id="employees-view" class="module-view hidden">
+          <!-- El contenido se generará dinámicamente desde employees.js -->
+        </div>
+
+        <!-- Módulo de Turnos -->
+        <div id="shifts-view" class="module-view hidden">
+          <!-- El contenido se generará dinámicamente desde shifts.js -->
+        </div>
+
+        <!-- Módulo de Tareas de Invierno -->
+        <div id="winter-view" class="module-view hidden">
+          <!-- El contenido se generará dinámicamente desde winter.js -->
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Sistema de notificaciones -->
+  <div id="notification-container"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/appState.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/modules/tasks.js"></script>
+  <script src="js/modules/inventory.js"></script>
+  <script src="js/modules/orders.js"></script>
+  <script src="js/modules/employees.js"></script>
+  <script src="js/modules/shifts.js"></script>
+  <script src="js/modules/chemicals.js"></script>
+  <script src="js/modules/winter.js"></script>
+</body>
+</html>

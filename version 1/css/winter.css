@@ -1,0 +1,125 @@
+/* winter.css - Estilos específicos para el módulo de mejoras de invierno */
+
+.winter-dashboard {
+    margin-top: 1.5rem;
+  }
+  
+  .winter-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Clases de prioridad para las tarjetas de tareas */
+  .priority-alta {
+    border-left: 4px solid var(--danger);
+  }
+  
+  .priority-media {
+    border-left: 4px solid var(--warning);
+  }
+  
+  .priority-baja {
+    border-left: 4px solid var(--success);
+  }
+  
+  /* Etiquetas de prioridad */
+  .tag-alta {
+    background-color: var(--danger);
+    color: white;
+  }
+  
+  .tag-media {
+    background-color: var(--warning);
+    color: white;
+  }
+  
+  .tag-baja {
+    background-color: var(--success);
+    color: white;
+  }
+  
+  /* Botones específicos para invierno */
+  .btn-edit-winter,
+  .btn-delete-winter,
+  .btn-complete-winter {
+    padding: 0.35rem 0.75rem;
+    border-radius: 4px;
+    border: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: var(--transition);
+  }
+  
+  .btn-edit-winter {
+    background-color: #e0e7ff;
+    color: #4338ca;
+  }
+  
+  .btn-edit-winter:hover {
+    background-color: #c7d2fe;
+  }
+  
+  .btn-delete-winter {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+  
+  .btn-delete-winter:hover {
+    background-color: #fecaca;
+  }
+  
+  .btn-complete-winter {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+  
+  .btn-complete-winter:hover {
+    background-color: #a7f3d0;
+  }
+  
+  /* Estilos para tareas completadas */
+  .task-item.completed {
+    opacity: 0.7;
+  }
+  
+  .task-item.completed::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+  }
+  
+  .task-item.completed .task-title {
+    text-decoration: line-through;
+  }
+  
+  /* Gráfico de costes (opcional) */
+  .winter-cost-chart {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .winter-cost-chart h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    color: var(--dark);
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .winter-summary {
+      grid-template-columns: 1fr;
+    }
+  }
