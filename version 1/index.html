@@ -9,8 +9,10 @@
   <link rel="stylesheet" href="css/winter.css" />
   <link rel="stylesheet" href="css/chemicals.css" />
   <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+  <link rel="stylesheet" href="css/pool.css" />
   <link rel="stylesheet" href="css/shifts.css" />
-  <link rel="stylesheet" href="css/employee-cards.css" /> <!-- Nuevo archivo CSS -->
+  <link rel="stylesheet" href="css/employee-cards.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="icon" href="assets/images/favicon.ico" />
 </head>
@@ -31,6 +33,8 @@
         <li><a href="#employees-view"><i class="fas fa-users"></i> Empleados</a></li>
         <li><a href="#shifts-view"><i class="fas fa-calendar-alt"></i> Turnos</a></li>
         <li><a href="#winter-view"><i class="fas fa-snowflake"></i> Invierno</a></li>
+        <li><a href="#pools-view"><i class="fas fa-swimming-pool"></i> Piscinas</a></li>
+        <li><a href="#admin-view"><i class="fas fa-cogs"></i> Administración</a></li>
       </ul>
       <div class="sidebar-footer">
         <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
@@ -100,6 +104,16 @@
         <div id="winter-view" class="module-view hidden">
           <!-- El contenido se generará dinámicamente desde winter.js -->
         </div>
+        
+        <!-- Módulo de Piscinas -->
+        <div id="pools-view" class="module-view hidden">
+          <!-- El contenido se generará dinámicamente desde pools.js -->
+        </div>
+
+        <!-- Módulo de Administración -->
+        <div id="admin-view" class="module-view hidden">
+          <!-- El contenido se generará dinámicamente desde admin.js -->
+        </div>
       </section>
     </div>
   </div>
@@ -119,5 +133,7 @@
   <script src="js/modules/shifts.js"></script>
   <script src="js/modules/chemicals.js"></script>
   <script src="js/modules/winter.js"></script>
+  <script src="js/modules/pools.js"></script>
+  <script src="js/modules/admin.js"></script>
 </body>
 </html>

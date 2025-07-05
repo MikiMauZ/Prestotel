@@ -2,18 +2,6 @@
 const AppState = {
     // Datos de la aplicación
     data: {
-      currentModule: 'dashboard-view',
-      user: null,
-      userRole: 'admin', // Valor por defecto para desarrollo
-      tasks: [],
-      employees: [],
-      inventory: [],
-      orders: [],
-      chemicals: [],
-      shifts: []
-    },
-
-    data: {
         currentModule: 'dashboard-view',
         user: null,
         userRole: 'admin', // Valor por defecto para desarrollo
@@ -23,8 +11,10 @@ const AppState = {
         orders: [],
         chemicals: [],
         shifts: [],
-        winterTasks: [] // Añadido para el módulo de invierno
-      },
+        winterTasks: [], // Añadido para el módulo de invierno
+        pools: [], // Añadido para el módulo de piscinas
+        poolRecords: [] // Añadido para los registros de piscinas
+    },
     
     // Observadores de cambios
     listeners: {},
@@ -148,18 +138,34 @@ const AppState = {
           const parsedData = JSON.parse(savedData);
           
           // Convertir fechas de string a Date
-          if (parsedData.tasks) {
-            parsedData.tasks.forEach(task => {
-              task.createdAt = new Date(task.createdAt);
-              task.updatedAt = new Date(task.updatedAt);
-            });
-          }
+          this.convertDates(parsedData);
           
           this.data = { ...this.data, ...parsedData };
           console.log('AppState loaded from localStorage');
         }
       } catch (error) {
         console.error('Error loading AppState from localStorage:', error);
+      }
+    },
+    
+    // Convertir fechas de string a Date en el objeto parsedData
+    convertDates: function(obj) {
+      // Campos que contienen fechas
+      const dateFields = ['createdAt', 'updatedAt', 'date', 'lastInspection'];
+      
+      // Procesar arrays
+      for (const key in obj) {
+        if (Array.isArray(obj[key])) {
+          obj[key].forEach(item => {
+            if (typeof item === 'object') {
+              dateFields.forEach(field => {
+                if (item[field] && typeof item[field] === 'string') {
+                  item[field] = new Date(item[field]);
+                }
+              });
+            }
+          });
+        }
       }
     },
     

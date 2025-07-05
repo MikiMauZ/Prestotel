@@ -1,4 +1,4 @@
-// Módulo de gestión de pedidos
+// Correcciones para el módulo de gestión de pedidos
 document.addEventListener('DOMContentLoaded', () => {
     // Verificar si estamos en la página de pedidos
     const ordersView = document.getElementById('orders-view');
@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let searchInput;
     let orderForm;
     let btnNewOrder;
+    let saveOrderBtn;
     
     // Variables de estado
     let currentOrderId = null;
@@ -29,11 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput = document.getElementById('search-order');
         orderForm = document.getElementById('order-form');
         btnNewOrder = document.getElementById('btn-new-order');
+        saveOrderBtn = document.getElementById('save-order-btn');
         
         // Verificar si hay datos de pedidos en AppState
         if (!AppState.get('orders') || AppState.get('orders').length === 0) {
-        console.log('No hay pedidos en AppState, cargando datos de ejemplo...');
-        loadMockOrdersData();
+            console.log('No hay pedidos en AppState, cargando datos de ejemplo...');
+            loadMockOrdersData();
         }
         
         // Suscribirse a cambios en pedidos
@@ -112,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Guardar en AppState
         AppState.data.orders = mockOrders;
         AppState.saveToLocalStorage();
-        AppState.notifyAll(); // Importante: notificar a todos los observadores
+        console.log('Datos de ejemplo de pedidos cargados en AppState:', mockOrders.length);
       }
     }
     
@@ -126,10 +128,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="filters">
               <select id="filter-status" class="form-control">
                 <option value="">Todos los estados</option>
-                <option value="Pendiente">Pendientes</option>
-                <option value="Solicitado">Solicitados</option>
-                <option value="Completado">Completados</option>
-                <option value="Rechazado">Rechazados</option>
+                <option value="pending">Pendientes</option>
+                <option value="requested">Pedidos</option>
+                <option value="completed">Completados</option>
+                <option value="rejected">Rechazados</option>
               </select>
               <select id="filter-supplier" class="form-control">
                 <option value="">Todos los proveedores</option>
@@ -184,9 +186,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Configurar eventos
     function setupEventListeners() {
       // Filtros
-      filterStatus.addEventListener('change', applyFilters);
-      filterSupplier.addEventListener('change', applyFilters);
-      searchInput.addEventListener('input', applyFilters);
+      filterStatus.addEventListener('change', () => {
+        renderOrders(applyFilters());
+      });
+      
+      filterSupplier.addEventListener('change', () => {
+        renderOrders(applyFilters());
+      });
+      
+      searchInput.addEventListener('input', () => {
+        renderOrders(applyFilters());
+      });
       
       // Nuevo pedido
       btnNewOrder.addEventListener('click', () => {
@@ -207,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       
       // Guardar pedido
-      document.getElementById('save-order-btn').addEventListener('click', saveOrder);
+      saveOrderBtn.addEventListener('click', saveOrder);
     }
     
     // Renderizar lista de pedidos
@@ -218,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSupplierFilter(orders);
         
         // Aplicar filtros
-        const filteredOrders = applyFilters();
+        const filteredOrders = Array.isArray(orders) ? orders : applyFilters();
         
         // Limpiar lista
         ordersList.innerHTML = '';
@@ -257,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const statusText = {
           pending: 'Pendiente',
-          requested: 'Solicitado',
+          requested: 'Pedido',
           completed: 'Completado',
           rejected: 'Rechazado'
         }[order.status] || 'Pendiente';
@@ -272,21 +282,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const isOverdue = orderDate < today && (order.status === 'pending' || order.status === 'requested');
         
         // Formatear cantidad con 2 decimales
-        const formattedAmount = order.amount.toFixed(2).replace('.', ',');
+        const formattedAmount = order.amount ? order.amount.toFixed(2).replace('.', ',') : '0,00';
+        
+        // Formatear fecha de creación
+        const createdDate = Utils.formatDate(order.createdAt);
         
         card.innerHTML = `
           <div class="order-item-header">
             <h3 class="order-item-title">${Utils.sanitizeHTML(order.title)}</h3>
-            <div class="order-status ${statusClass}-tag">${statusText}</div>
+            <div>
+              <span class="task-tag ${statusClass}-tag">${statusText}</span>
+            </div>
           </div>
           <div class="order-item-body">
             <div class="order-meta">
               <div class="order-supplier">
                 <i class="fas fa-building"></i> ${Utils.sanitizeHTML(order.supplier)}
               </div>
+              ${order.date ? `
               <div class="order-date ${isOverdue ? 'overdue' : ''}">
-                <i class="fas fa-calendar-alt"></i> ${Utils.formatDate(order.date)}
+                <i class="fas fa-calendar-alt"></i> Fecha necesaria: ${Utils.formatDate(order.date)}
                 ${isOverdue ? '<span class="overdue-badge">Vencido</span>' : ''}
+              </div>
+              ` : ''}
+              <div class="order-created">
+                <i class="fas fa-calendar-check"></i> Fecha creación: ${createdDate}
               </div>
               <div class="order-amount">
                 <i class="fas fa-euro-sign"></i> ${formattedAmount} €
@@ -294,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="order-content">
               <h4>Artículos:</h4>
-              <pre class="order-items">${Utils.sanitizeHTML(order.items)}</pre>
+              <pre class="order-items">${Utils.sanitizeHTML(order.items || '')}</pre>
             </div>
             ${order.rejectionReason ? `
               <div class="rejection-reason">
@@ -305,7 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="order-item-actions">
             <button class="btn-edit-order" data-id="${order.id}"><i class="fas fa-edit"></i> Editar</button>
             ${order.status === 'pending' ? `
-              <button class="btn-request-order" data-id="${order.id}"><i class="fas fa-paper-plane"></i> Solicitar</button>
+              <button class="btn-request-order" data-id="${order.id}"><i class="fas fa-paper-plane"></i> Pedir</button>
+              <button class="btn-reject-order" data-id="${order.id}"><i class="fas fa-times"></i> Rechazar</button>
             ` : ''}
             ${order.status === 'requested' ? `
               <button class="btn-complete-order" data-id="${order.id}"><i class="fas fa-check"></i> Completar</button>
@@ -384,11 +405,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Aplicar filtros
     function applyFilters() {
-      const status = filterStatus.value;
-      const supplier = filterSupplier.value;
-      const search = searchInput.value.toLowerCase();
+      const status = filterStatus ? filterStatus.value : '';
+      const supplier = filterSupplier ? filterSupplier.value : '';
+      const search = searchInput ? searchInput.value.toLowerCase() : '';
       
-      const orders = AppState.get('orders');
+      const orders = AppState.get('orders') || [];
       
       return orders.filter(order => {
         const matchesStatus = !status || order.status === status;
@@ -396,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const matchesSearch = !search || 
                              order.title.toLowerCase().includes(search) ||
                              order.supplier.toLowerCase().includes(search) ||
-                             order.items.toLowerCase().includes(search);
+                             (order.items && order.items.toLowerCase().includes(search));
         
         return matchesStatus && matchesSupplier && matchesSearch;
       });
@@ -422,15 +443,19 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('order-title').value = order.title;
       document.getElementById('order-supplier').value = order.supplier;
       
-      // Formatear fecha (YYYY-MM-DD)
-      const dateObj = new Date(order.date);
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      document.getElementById('order-date').value = `${year}-${month}-${day}`;
+      // Formatear fecha (YYYY-MM-DD) solo si existe
+      if (order.date) {
+        const dateObj = new Date(order.date);
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        document.getElementById('order-date').value = `${year}-${month}-${day}`;
+      } else {
+        document.getElementById('order-date').value = '';
+      }
       
-      document.getElementById('order-items').value = order.items;
-      document.getElementById('order-amount').value = order.amount;
+      document.getElementById('order-items').value = order.items || '';
+      document.getElementById('order-amount').value = order.amount || '';
       
       // Actualizar título y ID actual
       document.getElementById('form-title').textContent = 'Editar Pedido';
@@ -542,18 +567,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Eliminar pedido
     function deleteOrder(orderId) {
-      if (!confirm('¿Estás seguro de que deseas eliminar este pedido?')) {
-        return;
-      }
-      
-      const orders = AppState.get('orders');
-      const newOrders = orders.filter(o => o.id !== orderId);
-      
-      AppState.update('orders', newOrders);
-      Utils.showToast('Pedido eliminado correctamente', 'success');
+      Utils.confirmAction(
+        '¿Estás seguro de que deseas eliminar este pedido?',
+        () => {
+          const orders = AppState.get('orders');
+          const newOrders = orders.filter(o => o.id !== orderId);
+          
+          AppState.update('orders', newOrders);
+          Utils.showToast('Pedido eliminado correctamente', 'success');
+        }
+      );
     }
     
-    // Guardar nuevo pedido o actualizar existente
     // Guardar o actualizar pedido
     function saveOrder() {
         // Obtener valores del formulario
@@ -565,69 +590,69 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Validar campos obligatorios
         if (!titleEl.value.trim()) {
-        Utils.showToast('Por favor introduce un título para el pedido', 'error');
-        titleEl.focus();
-        return;
+            Utils.showToast('Por favor introduce un título para el pedido', 'error');
+            titleEl.focus();
+            return;
         }
-    
+        
         if (!supplierEl.value.trim()) {
-        Utils.showToast('Por favor introduce el nombre del proveedor', 'error');
-        supplierEl.focus();
-        return;
+            Utils.showToast('Por favor introduce el nombre del proveedor', 'error');
+            supplierEl.focus();
+            return;
         }
         
-        // La fecha y el importe ahora son opcionales
-        
-        // Preparar datos
+        // Preparar datos del pedido
         const orderData = {
-        title: titleEl.value.trim(),
-        supplier: supplierEl.value.trim(),
-        // Fecha necesaria (opcional)
-        date: dateEl.value ? new Date(dateEl.value) : null,
-        items: itemsEl.value.trim(),
-        // Importe (opcional) - si no hay valor, usamos 0
-        amount: amountEl.value ? Number(amountEl.value) : 0,
-        updatedAt: new Date()
+            title: titleEl.value.trim(),
+            supplier: supplierEl.value.trim(),
+            // Fecha necesaria (opcional)
+            date: dateEl.value ? new Date(dateEl.value) : null,
+            items: itemsEl.value.trim(),
+            // Importe (opcional) - si no hay valor, usamos 0
+            amount: amountEl.value ? Number(amountEl.value) : 0,
+            updatedAt: new Date()
         };
         
         // Si es un nuevo pedido, añadir campos adicionales
         if (!currentOrderId) {
-        orderData.createdAt = new Date(); // Fecha de creación automática
-        orderData.createdBy = currentUser ? currentUser.uid : 'sistema';
-        orderData.createdByEmail = currentUser ? currentUser.email : 'sistema@prestotel.com';
-        orderData.status = 'Pendiente';
+            orderData.status = 'pending';
+            orderData.createdAt = new Date(); // Fecha de creación automática
         }
         
+        // Deshabilitar botón para evitar múltiples clics
         saveOrderBtn.disabled = true;
         
         // Guardar en AppState
         const orders = [...AppState.get('orders')];
         
         if (currentOrderId) {
-        // Actualizar existente
-        const index = orders.findIndex(o => o.id === currentOrderId);
-        if (index !== -1) {
-            orders[index] = { ...orders[index], ...orderData };
-            AppState.update('orders', orders);
-            Utils.showToast('Pedido actualizado correctamente', 'success');
-        }
+            // Actualizar existente
+            const index = orders.findIndex(o => o.id === currentOrderId);
+            if (index !== -1) {
+                orders[index] = { ...orders[index], ...orderData };
+                AppState.update('orders', orders);
+                Utils.showToast('Pedido actualizado correctamente', 'success');
+            }
         } else {
-        // Crear nuevo
-        const maxId = orders.reduce((max, o) => Math.max(max, o.id || 0), 0);
-        const newOrder = {
-            ...orderData,
-            id: maxId + 1
-        };
-        
-        orders.push(newOrder);
-        AppState.update('orders', orders);
-        Utils.showToast('Pedido creado correctamente', 'success');
+            // Crear nuevo
+            const maxId = orders.reduce((max, o) => Math.max(max, o.id || 0), 0);
+            const newOrder = {
+                ...orderData,
+                id: maxId + 1
+            };
+            
+            orders.push(newOrder);
+            AppState.update('orders', orders);
+            Utils.showToast('Pedido creado correctamente', 'success');
         }
         
         // Restablecer el formulario
-        resetOrderForm();
+        resetForm();
         orderForm.classList.add('hidden');
         saveOrderBtn.disabled = false;
+        
+        // Renderizar pedidos actualizados
+        renderOrders(orders);
     }
     
     // Resetear formulario
@@ -648,6 +673,4 @@ document.addEventListener('DOMContentLoaded', () => {
     window.editOrder = editOrder;
     window.deleteOrder = deleteOrder;
     window.updateOrderStatus = updateOrderStatus;
-    window.showRejectDialog = showRejectDialog;
-    window.hideRejectDialog = hideRejectDialog;
   });
