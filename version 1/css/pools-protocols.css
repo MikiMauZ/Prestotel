@@ -1,0 +1,488 @@
+/* Estilos para protocolos - integrados con Prestotel */
+
+/* Tabs */
+.tabs-nav {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #ddd;
+}
+
+.tab-btn {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    color: #666;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tab-btn.active {
+    background: white;
+    color: var(--primary, #3b6aaf);
+    border-color: var(--primary, #3b6aaf);
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Protocols */
+.protocols-header {
+    text-align: center;
+    padding: 2rem;
+    background: var(--primary, #3b6aaf);
+    color: white;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.protocol-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.section-card {
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.section-card:hover {
+    border-color: var(--primary, #3b6aaf);
+}
+
+.section-card.active {
+   border-color: var(--primary, #3b6aaf);
+   background: #f8fafc;
+}
+
+.card-icon {
+   font-size: 2rem;
+}
+
+.protocol-selector {
+   display: none;
+   margin-bottom: 2rem;
+   padding: 1.5rem;
+   background: #f8f9fa;
+   border-radius: 8px;
+}
+
+.protocol-selector.active {
+   display: block;
+}
+
+.protocol-buttons {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+   gap: 1rem;
+}
+
+.protocol-btn {
+   background: white;
+   border: 2px solid #ddd;
+   border-radius: 8px;
+   padding: 1rem;
+   cursor: pointer;
+   transition: all 0.2s;
+}
+
+.protocol-btn:hover {
+   border-color: var(--primary, #3b6aaf);
+}
+
+.protocol-btn.active {
+   border-color: var(--primary, #3b6aaf);
+   background: #f0f8ff;
+}
+
+/* Results */
+.results {
+   display: none;
+   margin-top: 2rem;
+}
+
+.results.active {
+   display: block;
+}
+
+.result-card {
+   background: white;
+   border-radius: 8px;
+   padding: 1.5rem;
+   margin-bottom: 1rem;
+   box-shadow: var(--box-shadow, 0 2px 4px rgba(0,0,0,0.1));
+   border-left: 4px solid var(--primary, #3b6aaf);
+}
+
+.result-title {
+   font-size: 1.2rem;
+   font-weight: 600;
+   margin-bottom: 1rem;
+}
+
+.protocol-steps {
+   margin-top: 1rem;
+}
+
+.protocol-step {
+   display: flex;
+   align-items: flex-start;
+   margin-bottom: 1rem;
+   padding: 0.75rem;
+   background: #f8f9fa;
+   border-radius: 6px;
+}
+
+.step-number {
+   background: var(--primary, #3b6aaf);
+   color: white;
+   border-radius: 50%;
+   width: 28px;
+   height: 28px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-weight: 600;
+   margin-right: 1rem;
+   flex-shrink: 0;
+   font-size: 0.9rem;
+}
+
+.step-content {
+   flex: 1;
+}
+
+.highlight {
+   background: #fff3cd;
+   padding: 1rem;
+   border-radius: 6px;
+   border-left: 4px solid #ffc107;
+   margin: 1rem 0;
+}
+
+.export-section {
+   display: none;
+   margin-top: 2rem;
+   padding: 1.5rem;
+   background: #f8f9fa;
+   border-radius: 8px;
+   text-align: center;
+}
+
+.export-section.active {
+   display: block;
+}
+
+.export-buttons {
+   display: flex;
+   gap: 1rem;
+   justify-content: center;
+   flex-wrap: wrap;
+}
+
+/* Incidents */
+.incidents-container {
+   display: grid;
+   gap: 1rem;
+}
+
+.incident-item {
+   background: white;
+   border-radius: 8px;
+   box-shadow: var(--box-shadow, 0 2px 4px rgba(0,0,0,0.1));
+   overflow: hidden;
+}
+
+.incident-header {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   padding: 1rem;
+   background: #f8f9fa;
+   border-bottom: 1px solid #ddd;
+}
+
+.incident-type {
+   padding: 0.25rem 0.75rem;
+   border-radius: 12px;
+   font-size: 0.85rem;
+   font-weight: 600;
+   color: white;
+}
+
+.incident-type.warning {
+   background: #f59e0b;
+}
+
+.incident-type.danger {
+   background: #ef4444;
+}
+
+.incident-type.info {
+   background: var(--primary, #3b6aaf);
+}
+
+.incident-body {
+   padding: 1rem;
+}
+
+.incident-actions {
+   padding: 1rem;
+   background: #f8f9fa;
+   border-top: 1px solid #ddd;
+   display: flex;
+   gap: 0.5rem;
+}
+
+/* Pools grid usando tu estilo existente */
+.pools-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+   gap: 1rem;
+}
+
+.pool-item {
+   background: white;
+   border-radius: var(--border-radius, 8px);
+   box-shadow: var(--box-shadow, 0 2px 4px rgba(0,0,0,0.1));
+   overflow: hidden;
+   transition: transform 0.2s;
+}
+
+.pool-item:hover {
+   transform: translateY(-3px);
+}
+
+.pool-header {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   padding: 1rem;
+   background: #f8f9fa;
+   border-bottom: 1px solid #ddd;
+}
+
+.pool-status {
+   padding: 0.25rem 0.75rem;
+   border-radius: 12px;
+   font-size: 0.85rem;
+   font-weight: 600;
+   color: white;
+}
+
+.pool-status.success {
+   background: #22c55e;
+}
+
+.pool-status.warning {
+   background: #f59e0b;
+}
+
+.pool-status.danger {
+   background: #ef4444;
+}
+
+.pool-info {
+   padding: 1rem;
+}
+
+.pool-detail {
+   margin: 0.5rem 0;
+   color: #666;
+}
+
+.pool-actions {
+   padding: 1rem;
+   background: #f8f9fa;
+   border-top: 1px solid #ddd;
+   display: flex;
+   gap: 0.5rem;
+}
+
+/* Records table */
+.records-table {
+   width: 100%;
+   border-collapse: collapse;
+   background: white;
+   border-radius: 8px;
+   overflow: hidden;
+   box-shadow: var(--box-shadow, 0 2px 4px rgba(0,0,0,0.1));
+}
+
+.records-table th {
+   background: #f8f9fa;
+   padding: 1rem;
+   text-align: left;
+   font-weight: 600;
+   border-bottom: 2px solid #ddd;
+}
+
+.records-table td {
+   padding: 0.75rem 1rem;
+   border-bottom: 1px solid #f0f0f0;
+}
+
+.records-table tr:hover {
+   background: #f8f9fa;
+}
+
+/* Loading spinner */
+.loading {
+   display: inline-block;
+   width: 16px;
+   height: 16px;
+   border: 2px solid #f3f3f3;
+   border-top: 2px solid var(--primary, #3b6aaf);
+   border-radius: 50%;
+   animation: spin 1s linear infinite;
+   margin-left: 0.5rem;
+}
+
+@keyframes spin {
+   0% { transform: rotate(0deg); }
+   100% { transform: rotate(360deg); }
+}
+
+.hidden {
+   display: none !important;
+}
+
+/* Status tags usando tu estilo existente */
+.status-tag {
+   padding: 0.25rem 0.75rem;
+   border-radius: 12px;
+   font-size: 0.8rem;
+   font-weight: 500;
+   color: white;
+}
+
+.status-completed-tag {
+   background: #22c55e;
+}
+
+.status-pending-tag {
+   background: #f59e0b;
+}
+
+/* Alerts */
+.alert {
+   padding: 1rem;
+   border-radius: 6px;
+   margin-bottom: 1rem;
+   border-left: 4px solid;
+}
+
+.alert.critical {
+   background: #fef2f2;
+   border-color: #ef4444;
+   color: #b91c1c;
+}
+
+/* Empty state */
+.empty-state {
+   text-align: center;
+   padding: 3rem 2rem;
+   color: #666;
+}
+
+.empty-state i {
+   color: #ccc;
+   margin-bottom: 1rem;
+}
+
+/* Modal styles using your existing pattern */
+.modal {
+   position: fixed;
+   top: 0;
+   left: 0;
+   right: 0;
+   bottom: 0;
+   background: rgba(0, 0, 0, 0.5);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   z-index: 9999;
+}
+
+.modal.hidden {
+   display: none;
+}
+
+.modal-content {
+   background: white;
+   border-radius: 8px;
+   width: 90%;
+   max-width: 600px;
+   max-height: 90vh;
+   overflow-y: auto;
+   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+   padding: 1rem 1.5rem;
+   border-bottom: 1px solid #ddd;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+}
+
+.close-modal {
+   font-size: 1.5rem;
+   cursor: pointer;
+   color: #999;
+}
+
+.modal-body {
+   padding: 1.5rem;
+}
+
+.modal-footer {
+   padding: 1rem 1.5rem;
+   border-top: 1px solid #ddd;
+   display: flex;
+   justify-content: flex-end;
+   gap: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+   .protocol-sections {
+       grid-template-columns: 1fr;
+   }
+   
+   .protocol-buttons {
+       grid-template-columns: 1fr;
+   }
+   
+   .export-buttons {
+       flex-direction: column;
+   }
+   
+   .tabs-nav {
+       flex-wrap: wrap;
+   }
+   
+   .tab-btn {
+       font-size: 0.85rem;
+       padding: 0.5rem 1rem;
+   }
+}

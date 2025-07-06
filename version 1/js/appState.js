@@ -6,6 +6,8 @@ const AppState = {
         user: null,
         userRole: 'admin', // Valor por defecto para desarrollo
         tasks: [],
+        poolIncidents: [], // Histórico de incidencias
+        protocolCalculations: [], // Cálculos realizados
         employees: [],
         inventory: [],
         orders: [],

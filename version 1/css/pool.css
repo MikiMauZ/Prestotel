@@ -501,3 +501,50 @@ textarea#record-observations {
     min-height: 40px;
 }
 }
+
+/* Estilos para la sección de incidencias en el modal */
+#incident-section {
+    border-top: 2px solid #e9ecef;
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+
+#incident-section h4 {
+    color: #dc3545;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.btn-view-observations, .btn-view-incident {
+    color: var(--info);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.3rem;
+    margin: 0 0.2rem;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+.btn-view-observations:hover, .btn-view-incident:hover {
+    background-color: rgba(23, 162, 184, 0.1);
+}
+
+.record-incidents {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.clear-date-btn {
+    height: 38px; /* Mismo alto que el input de fecha */
+}
+
+/* Mejorar el botón de añadir incidencia */
+#add-incident-btn {
+    margin-right: 0.5rem;
+}
+
+/* Estilos para el estado oculto */
+.hidden {
+    display: none !important;
+}
