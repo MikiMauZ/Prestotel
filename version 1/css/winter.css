@@ -1,125 +1,738 @@
-/* winter.css - Estilos específicos para el módulo de mejoras de invierno */
+/* winter.css - Estilos completos para el módulo de mejoras de invierno */
+
+/* ===========================
+   DASHBOARD Y RESUMEN
+   =========================== */
 
 .winter-dashboard {
     margin-top: 1.5rem;
-  }
-  
-  .winter-summary {
+}
+
+.winter-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.25rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  /* Clases de prioridad para las tarjetas de tareas */
-  .priority-alta {
-    border-left: 4px solid var(--danger);
-  }
-  
-  .priority-media {
-    border-left: 4px solid var(--warning);
-  }
-  
-  .priority-baja {
-    border-left: 4px solid var(--success);
-  }
-  
-  /* Etiquetas de prioridad */
-  .tag-alta {
+    margin-bottom: 2rem;
+}
+
+.summary-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-left: 4px solid var(--primary);
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.summary-card .card-icon {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    opacity: 0.1;
+    font-size: 3rem;
+}
+
+.summary-card .card-content h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--dark);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-card .card-content p {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+/* Variantes de colores para summary cards */
+.summary-card.priority-alta {
+    border-left-color: var(--danger);
+}
+
+.summary-card.priority-alta .card-content p {
+    color: var(--danger);
+}
+
+.summary-card.priority-media {
+    border-left-color: var(--warning);
+}
+
+.summary-card.priority-media .card-content p {
+    color: var(--warning);
+}
+
+.summary-card.priority-baja {
+    border-left-color: var(--success);
+}
+
+.summary-card.priority-baja .card-content p {
+    color: var(--success);
+}
+
+/* ===========================
+   CONTENEDOR DE TAREAS
+   =========================== */
+
+.tasks-container {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+    margin-top: 2rem;
+}
+
+.tasks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+}
+
+.tasks-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--dark);
+}
+
+/* ===========================
+   GRID DE TAREAS
+   =========================== */
+
+.tasks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+/* ===========================
+   TARJETAS DE TAREAS
+   =========================== */
+
+.task-item {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.task-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+/* Borde izquierdo según prioridad */
+.task-item.priority-alta {
+    border-left: 5px solid var(--danger);
+}
+
+.task-item.priority-media {
+    border-left: 5px solid var(--warning);
+}
+
+.task-item.priority-baja {
+    border-left: 5px solid var(--success);
+}
+
+/* ===========================
+   HEADER DE TARJETA
+   =========================== */
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.25rem 1.25rem 0.75rem 1.25rem;
+    gap: 1rem;
+}
+
+.task-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--dark);
+    line-height: 1.4;
+    flex: 1;
+}
+
+.task-priority {
+    flex-shrink: 0;
+}
+
+/* ===========================
+   ETIQUETAS DE PRIORIDAD
+   =========================== */
+
+.tag {
+    display: inline-block;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tag-alta {
     background-color: var(--danger);
     color: white;
-  }
-  
-  .tag-media {
+}
+
+.tag-media {
     background-color: var(--warning);
     color: white;
-  }
-  
-  .tag-baja {
+}
+
+.tag-baja {
     background-color: var(--success);
     color: white;
-  }
-  
-  /* Botones específicos para invierno */
-  .btn-edit-winter,
-  .btn-delete-winter,
-  .btn-complete-winter {
-    padding: 0.35rem 0.75rem;
-    border-radius: 4px;
-    border: none;
+}
+
+/* ===========================
+   META INFORMACIÓN
+   =========================== */
+
+.task-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.task-meta > div {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.task-meta i {
+    width: 14px;
+    text-align: center;
+    color: var(--primary);
+}
+
+/* ===========================
+   FECHA LÍMITE
+   =========================== */
+
+.task-deadline {
+    padding: 0 1.25rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--warning);
+    font-weight: 500;
+}
+
+.task-deadline.overdue {
+    color: var(--danger);
+}
+
+.task-deadline.soon {
+    color: var(--warning);
+}
+
+/* ===========================
+   DESCRIPCIÓN Y COSTE
+   =========================== */
+
+.task-description {
+    padding: 0 1.25rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    color: #555;
+    line-height: 1.5;
+    background: #f8f9fa;
+    padding: 0.75rem 1.25rem;
+    margin: 0 1.25rem 0.75rem 1.25rem;
+    border-radius: 6px;
+    border-left: 3px solid var(--primary);
+}
+
+.task-cost {
+    padding: 0 1.25rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.task-cost i {
+    color: var(--success);
+}
+
+/* ===========================
+   FOOTER DE TARJETA
+   =========================== */
+
+.task-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    gap: 1rem;
+}
+
+.task-dates {
+    flex: 1;
+}
+
+.task-dates small {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+.task-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* ===========================
+   BOTONES DE ACCIÓN
+   =========================== */
+
+.btn-edit-winter,
+.btn-delete-winter,
+.btn-complete-winter,
+.btn-reopen-winter {
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.8rem;
     cursor: pointer;
     display: flex;
     align-items: center;
-    transition: var(--transition);
-  }
-  
-  .btn-edit-winter {
+    gap: 0.3rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.btn-edit-winter {
     background-color: #e0e7ff;
     color: #4338ca;
-  }
-  
-  .btn-edit-winter:hover {
+}
+
+.btn-edit-winter:hover {
     background-color: #c7d2fe;
-  }
-  
-  .btn-delete-winter {
+    transform: translateY(-1px);
+}
+
+.btn-delete-winter {
     background-color: #fee2e2;
-    color: #b91c1c;
-  }
-  
-  .btn-delete-winter:hover {
+    color: #dc2626;
+}
+
+.btn-delete-winter:hover {
     background-color: #fecaca;
-  }
-  
-  .btn-complete-winter {
+    transform: translateY(-1px);
+}
+
+.btn-complete-winter {
     background-color: #d1fae5;
     color: #065f46;
-  }
-  
-  .btn-complete-winter:hover {
+}
+
+.btn-complete-winter:hover {
     background-color: #a7f3d0;
-  }
-  
-  /* Estilos para tareas completadas */
-  .task-item.completed {
-    opacity: 0.7;
-  }
-  
-  .task-item.completed::after {
+    transform: translateY(-1px);
+}
+
+.btn-reopen-winter {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.btn-reopen-winter:hover {
+    background-color: #fde68a;
+    transform: translateY(-1px);
+}
+
+/* ===========================
+   TAREAS COMPLETADAS
+   =========================== */
+
+.task-item.completed {
+    opacity: 0.75;
+    position: relative;
+}
+
+.task-item.completed::before {
     content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(255, 255, 255, 0.5);
+    background: linear-gradient(45deg, transparent 40%, rgba(34, 197, 94, 0.1) 50%, transparent 60%);
     pointer-events: none;
-  }
-  
-  .task-item.completed .task-title {
+    z-index: 1;
+}
+
+.task-item.completed .task-title {
     text-decoration: line-through;
-  }
-  
-  /* Gráfico de costes (opcional) */
-  .winter-cost-chart {
+    color: #6c757d;
+}
+
+.task-item.completed .task-header::after {
+    content: "✓ COMPLETADA";
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--success);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    z-index: 2;
+}
+
+/* ===========================
+   ESTADOS DE BADGES
+   =========================== */
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-completed {
+    background-color: #d1edff;
+    color: #0c63e4;
+}
+
+/* ===========================
+   ESTADO VACÍO
+   =========================== */
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+    grid-column: 1 / -1;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    color: #dee2e6;
+}
+
+.empty-state h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    color: var(--dark);
+}
+
+.empty-state p {
+    margin: 0 0 2rem 0;
+    font-size: 1rem;
+}
+
+/* ===========================
+   FORMULARIO DE WINTER
+   =========================== */
+
+.form-container {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+}
+
+.form-title {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-title::before {
+    content: "❄️";
+    font-size: 1.2rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--dark);
+}
+
+.form-group label::after {
+    content: " *";
+    color: var(--danger);
+}
+
+.form-group label[for*="cost"]::after,
+.form-group label[for*="deadline"]::after,
+.form-group label[for*="description"]::after {
+    content: "";
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+/* ===========================
+   GRÁFICO DE COSTES
+   =========================== */
+
+.winter-cost-chart {
     background-color: white;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 1.5rem;
     margin-bottom: 1.5rem;
-  }
-  
-  .winter-cost-chart h3 {
+    border: 1px solid #e9ecef;
+}
+
+.winter-cost-chart h3 {
     margin-top: 0;
     margin-bottom: 1rem;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--dark);
-  }
-  
-  /* Responsive */
-  @media (max-width: 768px) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.winter-cost-chart h3::before {
+    content: "💰";
+    font-size: 1rem;
+}
+
+/* ===========================
+   FILTROS ESPECÍFICOS
+   =========================== */
+
+.filters {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    position: relative;
+    min-width: 250px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+}
+
+.search-box input {
+    padding-left: 2.5rem;
+}
+
+/* ===========================
+   RESPONSIVE DESIGN
+   =========================== */
+
+@media (max-width: 768px) {
     .winter-summary {
-      grid-template-columns: 1fr;
+        grid-template-columns: 1fr;
+        gap: 1rem;
     }
-  }
+    
+    .tasks-grid {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+    
+    .task-meta {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+    
+    .task-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .task-actions {
+        justify-content: center;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-box {
+        min-width: auto;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .tasks-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+}
+
+@media (max-width: 480px) {
+    .summary-card {
+        padding: 1rem;
+    }
+    
+    .summary-card .card-content h3 {
+        font-size: 0.9rem;
+    }
+    
+    .summary-card .card-content p {
+        font-size: 1.5rem;
+    }
+    
+    .task-header {
+        padding: 1rem 1rem 0.5rem 1rem;
+    }
+    
+    .task-title {
+        font-size: 1rem;
+    }
+    
+    .task-footer {
+        padding: 0.75rem 1rem;
+    }
+    
+    .btn-edit-winter,
+    .btn-delete-winter,
+    .btn-complete-winter,
+    .btn-reopen-winter {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* ===========================
+   ANIMACIONES
+   =========================== */
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.task-item {
+    animation: slideInUp 0.3s ease-out;
+}
+
+.form-container:not(.hidden) {
+    animation: slideInUp 0.4s ease-out;
+}
+
+/* ===========================
+   DARK MODE SUPPORT
+   =========================== */
+
+@media (prefers-color-scheme: dark) {
+    .task-item {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .task-title {
+        color: #f7fafc;
+    }
+    
+    .task-meta > div {
+        color: #a0aec0;
+    }
+    
+    .task-footer {
+        background: #1a202c;
+        border-color: #4a5568;
+    }
+    
+    .form-container {
+        background: #2d3748;
+        border-color: #4a5568;
+    }
+    
+    .form-title {
+        color: #f7fafc;
+    }
+    
+    .form-group label {
+        color: #e2e8f0;
+    }
+}
