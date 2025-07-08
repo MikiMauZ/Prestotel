@@ -1,0 +1,892 @@
+/* DASHBOARD CARDS */
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  overflow: hidden;
+  transition: transform 0.2s;
+  display: flex;
+  color: white;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.card-icon {
+  padding: 1.5rem;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-content {
+  flex: 1;
+  padding: 1.5rem 1.5rem 1.5rem 0;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.card-value {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+/* WIDGETS */
+.dashboard-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.dashboard-column {
+  flex: 1;
+}
+
+.widget {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.widget-title {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #eee;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.task-list-widget,
+.employee-list-widget {
+  padding: 1rem;
+}
+
+/* TASK ITEMS */
+.task-item {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  transition: var(--transition);
+}
+
+.task-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.task-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--dark);
+  margin: 0;
+}
+
+.task-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: white;
+}
+
+.tag-active {
+  background-color: var(--success);
+}
+
+.tag-paused {
+  background-color: var(--warning);
+}
+
+.tag-done {
+  background-color: var(--secondary);
+}
+
+.tag-escalated {
+  background-color: var(--danger);
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.task-meta i {
+  margin-right: 0.25rem;
+}
+
+.task-description {
+  font-size: 0.95rem;
+  color: #555;
+  margin-bottom: 1rem;
+}
+
+.task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.task-button {
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: var(--transition);
+}
+
+.task-button i {
+  margin-right: 0.25rem;
+}
+
+.btn-escalate {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.btn-escalate:hover {
+  background-color: #fecaca;
+}
+
+.btn-complete {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.btn-complete:hover {
+  background-color: #a7f3d0;
+}
+
+.btn-edit {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
+.btn-edit:hover {
+  background-color: #c7d2fe;
+}
+
+.btn-pause {
+  background-color: #fff7ed;
+  color: #c2410c;
+}
+
+.btn-pause:hover {
+  background-color: #ffedd5;
+}
+
+/* Estilos del módulo de inventario */
+.inventory-dashboard {
+  margin-top: 1.5rem;
+}
+
+.inventory-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  padding: 1.25rem;
+  border-radius: var(--border-radius);
+  color: white;
+}
+
+.summary-icon {
+  font-size: 2rem;
+  margin-right: 1rem;
+}
+
+.summary-content h3 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
+}
+
+.summary-content p {
+  font-size: 1.25rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.inventory-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.inventory-item {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.inventory-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.inventory-item-header {
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.inventory-item-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.inventory-category {
+  background: #f8f9fa;
+  color: #495057;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+}
+
+.inventory-item-body {
+  padding: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.inventory-quantity {
+  display: flex;
+  align-items: baseline;
+  margin-right: 2rem;
+}
+
+.quantity-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.quantity-unit {
+  margin-left: 0.25rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.inventory-info {
+  flex: 1;
+  min-width: 120px;
+}
+
+.inventory-min, .inventory-status {
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.inventory-notes {
+  width: 100%;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #eee;
+}
+
+.inventory-item-actions {
+  display: flex;
+  padding: 0.75rem;
+  border-top: 1px solid #f0f0f0;
+  background-color: #f8f9fa;
+}
+
+.inventory-item-actions button {
+  background: none;
+  border: none;
+  color: #495057;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  margin-right: 0.75rem;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.inventory-item-actions button i {
+  margin-right: 0.25rem;
+}
+
+.inventory-item-actions button:hover {
+  color: var(--primary);
+}
+
+.btn-delete-item:hover {
+  color: var(--danger) !important;
+}
+
+/* Estados de nivel de stock */
+.stock-level-low .inventory-item-header {
+  border-left: 4px solid var(--danger);
+}
+
+.stock-level-medium .inventory-item-header {
+  border-left: 4px solid var(--warning);
+}
+
+.stock-level-good .inventory-item-header {
+  border-left: 4px solid var(--success);
+}
+
+.stock-level-low .quantity-value {
+  color: var(--danger);
+}
+
+.stock-level-medium .quantity-value {
+  color: var(--warning);
+}
+
+.stock-level-good .quantity-value {
+  color: var(--success);
+}
+
+.stock-level-low {
+  color: var(--danger);
+}
+
+.stock-level-medium {
+  color: var(--warning);
+}
+
+.stock-level-good {
+  color: var(--success);
+}
+
+/* Modal para ajuste de stock */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.close-modal {
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #999;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* Estilos del módulo de pedidos */
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.order-item {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-left: 4px solid #ddd;
+}
+
+.order-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.order-item-header {
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #eee;
+}
+
+.order-item-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.order-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: white;
+}
+
+.status-pending-tag {
+  background-color: #ff9800; /* naranja */
+}
+
+.status-requested-tag {
+  background-color: #2196f3; /* azul */
+}
+
+.status-completed-tag {
+  background-color: #4caf50; /* verde */
+}
+
+.status-rejected-tag {
+  background-color: #f44336; /* rojo */
+}
+
+.order-item-body {
+  padding: 1.25rem 1.5rem;
+}
+
+.order-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.order-meta i {
+  color: #666;
+  margin-right: 0.5rem;
+}
+
+.order-date.overdue {
+  color: #f44336;
+}
+
+.overdue-badge {
+  display: inline-block;
+  background-color: #f44336;
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  margin-left: 0.5rem;
+}
+
+.order-content h4 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.order-items {
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin: 0;
+  font-family: inherit;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  color: #555;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.rejection-reason {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #ffebee;
+  border-radius: 4px;
+  color: #d32f2f;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+
+.rejection-reason i {
+  margin-right: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.order-item-actions {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.order-item-actions button {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.order-item-actions button i {
+  margin-right: 0.4rem;
+}
+
+.btn-edit-order {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.btn-edit-order:hover {
+  background-color: #bbdefb;
+}
+
+.btn-request-order {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.btn-request-order:hover {
+  background-color: #c8e6c9;
+}
+
+.btn-complete-order {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.btn-complete-order:hover {
+  background-color: #c8e6c9;
+}
+
+.btn-reject-order {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.btn-reject-order:hover {
+  background-color: #ffcdd2;
+}
+
+.btn-delete-order {
+  background-color: #f5f5f5;
+  color: #757575;
+}
+
+.btn-delete-order:hover {
+  background-color: #e0e0e0;
+}
+
+/* Colores de borde para los diferentes estados */
+.status-pending {
+  border-left-color: #ff9800;
+}
+
+.status-requested {
+  border-left-color: #2196f3;
+}
+
+.status-completed {
+  border-left-color: #4caf50;
+}
+
+.status-rejected {
+  border-left-color: #f44336;
+}
+
+/* Estilos del módulo de empleados */
+.employee-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.employees-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.employee-card {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-left: 4px solid var(--primary); /* Usar el color primario corporativo */
+}
+
+.employee-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.status-inactive {
+  border-left-color: var(--secondary);
+  opacity: 0.75;
+}
+
+.employee-header {
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #f8f9fa; /* Fondo sutil gris claro para el header */
+}
+
+.employee-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: var(--primary); /* Color corporativo más suave */
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.status-inactive .employee-avatar {
+  background-color: var(--secondary);
+}
+
+.employee-info {
+  flex: 1;
+}
+
+.employee-name {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.employee-position {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.employee-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.employee-department, .employee-hotel {
+  background-color: #f0f0f0;
+  color: #555;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.employee-status-tag {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: white;
+}
+
+.status-active-tag {
+  background-color: #2196f3;
+}
+
+.status-inactive-tag {
+  background-color: #6c757d;
+}
+
+.employee-body {
+  padding: 1.25rem;
+}
+
+.employee-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.75rem;
+}
+
+.employee-contact i {
+  width: 20px;
+  color: #999;
+}
+
+.employee-notes {
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0.75rem 0;
+}
+
+.employee-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.employee-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Actualizar los colores de los botones para ser más consistentes */
+.employee-actions button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  color: #333; /* Color más sutil */
+  background-color: #f0f0f0; /* Fondo neutro */
+}
+
+.employee-actions button:hover {
+  background-color: #e0e0e0;
+  color: #3b6aaf;
+}
+
+.btn-edit-employee {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.btn-edit-employee:hover {
+  background-color: #bbdefb;
+}
+
+.btn-delete-employee {
+  background-color: #ffebee;
+  color: #e53935;
+}
+
+.btn-delete-employee:hover {
+  background-color: #ffcdd2;
+}
+
+.btn-toggle-status {
+  background-color: #e8f5e9;
+  color: #789779;
+}
+
+.btn-toggle-status:hover {
+  background-color: #c8e6c9;
+}
+
+.status-inactive .btn-toggle-status {
+  background-color: #f5f5f5;
+  color: #616161;
+}
+
+.status-inactive .btn-toggle-status:hover {
+  background-color: #e0e0e0;
+}
+
+.form-group label:after {
+  content: "";
+}
+
+.form-group label[for$="title"]:after,
+.form-group label[for$="supplier"]:after,
+.form-group label[for$="amount"]:after,
+.form-group label[for$="date"]:after {
+  content: " *";
+  color: #dc3545;
+}
+
+/* Para los campos opcionales */
+.form-group label[for="order-date"]:after,
+.form-group label[for="order-amount"]:after {
+  content: " (opcional)";
+  color: #6c757d;
+  font-size: 0.85em;
+  font-weight: normal;
+}

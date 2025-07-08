@@ -1,0 +1,140 @@
+/* chemicals.css - Estilos específicos para la gestión de productos químicos */
+
+.chemical-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+  }
+  
+  .chemical-table th,
+  .chemical-table td {
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    text-align: left;
+  }
+  
+  .chemical-table th {
+    background-color: #f8f9fa;
+    font-weight: 500;
+    color: #555;
+  }
+  
+  .chemical-table input[type="number"] {
+    width: 60px;
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .product-col {
+    width: 50%;
+  }
+  
+  .qty-col {
+    width: 20%;
+  }
+  
+  .unit-col {
+    width: 10%;
+  }
+  
+  /* Lista de productos en tarjetas de pedido */
+  .chemical-product-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9rem;
+  }
+  
+  .chemical-product-item:last-child {
+    border-bottom: none;
+  }
+  
+  .product-name {
+    font-weight: 500;
+  }
+  
+  .product-qty {
+    color: #666;
+  }
+  
+  .chemical-card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 1rem;
+    padding: 1.25rem;
+    border-left: 4px solid #6f42c1; /* Color morado para químicos */
+  }
+  
+  .chemical-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .chemical-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  
+  .chemical-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+  }
+  
+  .chemical-products {
+    background-color: #f8f9fa;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+  }
+  
+  .chemical-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  /* Adaptaciones responsive */
+  @media (max-width: 768px) {
+    .chemical-table {
+      font-size: 0.8rem;
+    }
+    
+    .chemical-table th,
+    .chemical-table td {
+      padding: 6px 4px;
+    }
+    
+    .chemical-table input[type="number"] {
+      width: 50px;
+      padding: 4px;
+      font-size: 0.8rem;
+    }
+    
+    .chemical-product-item {
+      flex-direction: column;
+      padding: 6px 0;
+    }
+    
+    .product-qty {
+      margin-top: 2px;
+    }
+  }
