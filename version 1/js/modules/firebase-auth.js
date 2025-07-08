@@ -424,13 +424,43 @@ const FirebaseAuthModule = {
   },
   
   initializeMainApp() {
-    console.log('🚀 Inicializando aplicación principal...');
+  console.log('🚀 Inicializando aplicación principal...');
+  
+  // ⭐ VERIFICAR SI YA SE RECARGÓ PARA EVITAR BUCLE
+  const hasReloaded = sessionStorage.getItem('appReloaded');
+  
+  if (!hasReloaded) {
+    console.log('📱 Primera vez - Recargando página...');
     
-    // Recargar la página para inicializar la app principal
+    // Marcar que ya se recargó
+    sessionStorage.setItem('appReloaded', 'true');
+    
+    // Recargar página
     setTimeout(() => {
       window.location.reload();
-    }, 1000);
-  },
+    }, 500);
+    
+  } else {
+    console.log('✅ Ya se recargó - Mostrando aplicación directamente...');
+    
+    // Limpiar flag
+    sessionStorage.removeItem('appReloaded');
+    
+    // Mostrar aplicación sin recargar
+    const loginScreen = document.getElementById('loginScreen');
+    const appScreen = document.getElementById('app');
+    
+    if (loginScreen && appScreen) {
+      loginScreen.style.display = 'none';
+      appScreen.style.display = 'block';
+    }
+    
+    // Inicializar app
+    if (typeof initializeAuthenticatedApp === 'function') {
+      initializeAuthenticatedApp();
+    }
+  }
+},
   
   // ====================================================
   // UTILIDADES DE UI

@@ -458,3 +458,18 @@ const AppState = {
         return false;
     }
 };
+
+// Agregar al final de appState.js
+AppState.notifyAll = function() {
+  // Notificar a todos los listeners
+  for (const [key, callbacks] of Object.entries(this.listeners)) {
+    const value = this.state[key];
+    callbacks.forEach(callback => {
+      try {
+        callback(value);
+      } catch (error) {
+        console.warn(`Error en listener de ${key}:`, error);
+      }
+    });
+  }
+};
