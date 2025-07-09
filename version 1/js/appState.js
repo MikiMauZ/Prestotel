@@ -1,154 +1,45 @@
 // ====================================================
-// MODIFICACIONES PARA js/appState.js
+// GESTIÓN DE ESTADO CENTRALIZADA - SISTEMA LIMPIO
 // ====================================================
 
-// Gestión de estado centralizada de la aplicación
 const AppState = {
-    // Datos de la aplicación
+    // Datos de la aplicación - INICIADOS VACÍOS
     data: {
         currentModule: 'dashboard-view',
-        user: null,
-        userRole: 'admin', // Valor por defecto para desarrollo
+        isAuthenticated: false,
         
-        // ⭐ NUEVO: Información de licencias del cliente
-        clientLicense: {
-            clientId: "MELIA_2025",
-            clientName: "Meliá Hotels International",
-            plan: "enterprise", // basic, professional, enterprise, custom
-            status: "active", // active, suspended, expired
-            
-            // LÍMITES ESPECÍFICOS (Controlados por ti como Super Admin)
-            limits: {
-                maxHotels: 25,        // ⭐ CONTROL CLAVE: máximo hoteles
-                maxUsers: 100,        // máximo usuarios del cliente
-                maxTasksPerMonth: 10000,
-                maxStorageGB: 10,
-                maxPoolsPerHotel: 15,
-                maxEmployeesPerHotel: 100
-            },
-            
-            // MÓDULOS HABILITADOS (Controlados por ti)
-            enabledModules: [
-                "tasks", "inventory", "pools", "chemicals", 
-                "employees", "shifts", "winter", "admin"
-            ],
-            
-            // FECHAS IMPORTANTES
-            startDate: "2025-01-01",
-            expiryDate: "2025-12-31",
-            lastPayment: "2025-06-01",
-            nextBilling: "2025-07-01"
-        },
+        // ⭐ INFORMACIÓN DE LICENCIAS (Configurado por Super Admin)
+        clientLicense: null, // Se carga desde Firebase cuando el usuario se autentica
         
-        // ⭐ NUEVO: Usuario actual con permisos y contexto
-        currentUser: {
-            id: 1,
-            email: "admin@melia.com",
-            name: "Administrador Meliá",
-            userLevel: "client_admin", // super_admin, client_admin, hotel_manager, department_head, employee
-            
-            // HOTELES A LOS QUE TIENE ACCESO
-            assignedHotels: ["ALL"], // ["ALL"] = todos los hoteles, o ["MELIA_PALMA", "MELIA_COSTA"] = específicos
-            
-            // CONTEXTO ACTUAL (para selector de hotel)
-            currentHotelContext: "ALL", // Hotel actualmente seleccionado en el dropdown
-            
-            // PERMISOS GENERALES
-            permissions: {
-                canCreateHotels: true,
-                canManageUsers: true,
-                canViewReports: true,
-                canAccessAdmin: true
-            },
-            
-            createdAt: new Date(),
-            lastLogin: new Date()
-        },
+        // ⭐ USUARIO ACTUAL (Se establece desde Firebase Auth)
+        currentUser: null, // Se establece al hacer login
         
-        // ⭐ MEJORADO: Hoteles con estructura completa
-        hotels: [
-            {
-                id: 1,
-                name: "Meliá Palma Bay",
-                code: "MELIA_PALMA", // Código único para referencias
-                location: "Mallorca, España",
-                address: "Paseo Marítimo 11, 07014 Palma",
-                phone: "+34 971 268 500",
-                email: "palmabay@melia.com",
-                active: true,
-                createdBy: "admin@melia.com",
-                createdAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), // Hace 6 meses
-                
-                // Configuración específica del hotel
-                settings: {
-                    timezone: "Europe/Madrid",
-                    currency: "EUR",
-                    language: "es"
-                }
-            },
-            {
-                id: 2,
-                name: "Meliá Costa del Sol",
-                code: "MELIA_COSTA",
-                location: "Torremolinos, España", 
-                address: "Av. Carlota Alessandri 109, 29620 Torremolinos",
-                phone: "+34 952 386 677",
-                email: "costadelsol@melia.com",
-                active: true,
-                createdBy: "admin@melia.com",
-                createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000), // Hace 4 meses
-                
-                settings: {
-                    timezone: "Europe/Madrid",
-                    currency: "EUR", 
-                    language: "es"
-                }
-            },
-            {
-                id: 3,
-                name: "Meliá Barcelona City",
-                code: "MELIA_BCN",
-                location: "Barcelona, España",
-                address: "Avinguda de Sarrià 50, 08017 Barcelona", 
-                phone: "+34 934 106 060",
-                email: "barcelona@melia.com",
-                active: true,
-                createdBy: "admin@melia.com",
-                createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // Hace 3 meses
-                
-                settings: {
-                    timezone: "Europe/Madrid",
-                    currency: "EUR",
-                    language: "es"
-                }
-            }
-        ],
-        
-        // Datos operativos existentes (mantenemos como están)
-        tasks: [],
-        poolIncidents: [], // Histórico de incidencias
-        protocolCalculations: [], // Cálculos realizados
-        employees: [],
-        inventory: [],
-        orders: [],
-        chemicals: [],
-        shifts: [],
-        winterTasks: [], // Añadido para el módulo de invierno
-        pools: [], // Añadido para el módulo de piscinas
-        poolRecords: [] // Añadido para los registros de piscinas
+        // ⭐ DATOS OPERATIVOS - VACÍOS PARA EMPEZAR LIMPIO
+        hotels: [],           // Sin hoteles hardcodeados
+        tasks: [],            // Sin tareas de ejemplo
+        employees: [],        // Sin empleados demo
+        inventory: [],        // Sin productos ficticios
+        orders: [],           // Sin pedidos falsos
+        chemicals: [],        // Sin químicos demo
+        shifts: [],           // Sin turnos hardcodeados
+        winterTasks: [],      // Sin tareas de invierno demo
+        pools: [],            // Sin piscinas falsas
+        poolRecords: [],      // Sin registros demo
+        poolIncidents: [],    // Sin incidencias falsas
+        protocolCalculations: [] // Sin cálculos demo
     },
     
     // Observadores de cambios
     listeners: {},
     
-    // ⭐ NUEVA FUNCIÓN: Obtener hoteles según permisos del usuario
+    // ⭐ FUNCIÓN: Obtener hoteles según permisos del usuario
     getHotelOptions: function() {
         const currentUser = this.get('currentUser');
         const allHotels = this.get('hotels').filter(h => h.active);
         
-        // Si no hay usuario actual, devolver todos (fallback)
+        // Si no hay usuario actual, devolver array vacío
         if (!currentUser) {
-            return allHotels;
+            return [];
         }
         
         // Super admin ve todos los hoteles de todos los clientes
@@ -170,7 +61,7 @@ const AppState = {
         return [];
     },
     
-    // ⭐ NUEVA FUNCIÓN: Verificar permisos del usuario
+    // ⭐ FUNCIÓN: Verificar permisos del usuario
     hasPermission: function(permission) {
         const currentUser = this.get('currentUser');
         
@@ -183,10 +74,23 @@ const AppState = {
         return currentUser.permissions && currentUser.permissions[permission] === true;
     },
     
-    // ⭐ NUEVA FUNCIÓN: Obtener información de licencia
+    // ⭐ FUNCIÓN: Obtener información de licencia
     getLicenseInfo: function() {
         const license = this.get('clientLicense');
         const hotels = this.get('hotels').filter(h => h.active);
+        
+        if (!license) {
+            return {
+                clientName: 'Sin cliente',
+                plan: 'none',
+                status: 'inactive',
+                hotelsUsed: 0,
+                hotelsLimit: 0,
+                usagePercent: 0,
+                daysUntilExpiry: 0,
+                nearLimit: false
+            };
+        }
         
         return {
             clientName: license.clientName,
@@ -196,163 +100,95 @@ const AppState = {
             hotelsLimit: license.limits.maxHotels,
             usagePercent: Math.round((hotels.length / license.limits.maxHotels) * 100),
             daysUntilExpiry: Math.ceil((new Date(license.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)),
-            nearLimit: hotels.length >= (license.limits.maxHotels * 0.8) // Cerca del límite (80%)
+            nearLimit: hotels.length >= (license.limits.maxHotels * 0.8)
         };
     },
     
-    // Inicializar con datos mock para desarrollo
+    // ⭐ INICIALIZACIÓN LIMPIA - SIN DATOS DEMO
     init: function() {
-        console.log('🔄 Inicializando AppState con datos mock...');
+        console.log('🧹 Inicializando AppState LIMPIO (sin datos demo)...');
         
-        // Solo cargar datos mock si no existen ya
+        // ⭐ NO CARGAR DATOS DEMO - Sistema empieza vacío
+        // Los datos se cargarán desde Firebase o se crearán por el usuario
+        
+        console.log('✅ AppState inicializado limpio y listo para datos reales');
+        console.log('📊 Sistema listo para crear datos desde cero');
+        console.log('🏨 Hoteles: 0 (usar Admin para crear)');
+        console.log('📋 Tareas: 0 (usar módulo Tareas para crear)');
+        console.log('👥 Empleados: 0 (usar módulo Empleados para crear)');
+        console.log('📦 Inventario: 0 (usar módulo Stock para crear)');
+    },
+    
+    // ⭐ FUNCIÓN: Limpiar todos los datos (para testing)
+    clearAllData: function() {
+        console.log('🗑️ Limpiando todos los datos...');
+        
+        this.data.hotels = [];
+        this.data.tasks = [];
+        this.data.employees = [];
+        this.data.inventory = [];
+        this.data.orders = [];
+        this.data.chemicals = [];
+        this.data.shifts = [];
+        this.data.winterTasks = [];
+        this.data.pools = [];
+        this.data.poolRecords = [];
+        this.data.poolIncidents = [];
+        this.data.protocolCalculations = [];
+        
+        // Guardar estado limpio
+        this.saveToLocalStorage();
+        
+        console.log('✅ Todos los datos limpiados');
+    },
+    
+    // ⭐ FUNCIÓN: Crear datos de ejemplo (opcional para testing)
+    createSampleData: function() {
+        console.log('🎭 Creando datos de ejemplo para testing...');
+        
+        // Solo crear si no existen datos
+        if (this.data.hotels.length === 0) {
+            this.data.hotels = [
+                {
+                    id: 1,
+                    name: "Hotel Test",
+                    code: "TEST_01",
+                    location: "Ciudad Test",
+                    address: "Calle Test 123",
+                    phone: "+34 900 000 000",
+                    email: "test@hotel.com",
+                    active: true,
+                    createdBy: "test@user.com",
+                    createdAt: new Date(),
+                    settings: {
+                        timezone: "Europe/Madrid",
+                        currency: "EUR",
+                        language: "es"
+                    }
+                }
+            ];
+        }
+        
         if (this.data.tasks.length === 0) {
-            // Datos de ejemplo para tareas (actualizar con hoteles específicos)
             this.data.tasks = [
-                { 
-                    id: 1, 
-                    title: "Revisión caldera", 
-                    description: "Revisar presión y temperaturas",
-                    status: "active", 
-                    employee: "Juan Pérez", 
+                {
+                    id: 1,
+                    title: "Tarea de Prueba",
+                    description: "Esta es una tarea de ejemplo",
+                    status: "active",
+                    employee: "Usuario Test",
                     employeeId: 1,
-                    hotel: "MELIA_PALMA", // ⭐ Actualizado con código de hotel
-                    hotelName: "Meliá Palma Bay",
+                    hotel: "TEST_01",
+                    hotelName: "Hotel Test",
                     area: "Mantenimiento",
                     escalated: false,
-                    createdAt: new Date(Date.now() - 86400000), // Ayer
+                    createdAt: new Date(),
                     updatedAt: new Date()
-                },
-                { 
-                    id: 2, 
-                    title: "Cambiar filtros piscina", 
-                    description: "Reemplazar filtros de arena",
-                    status: "paused", 
-                    employee: "Lucía Gómez", 
-                    employeeId: 2,
-                    hotel: "MELIA_COSTA", // ⭐ Actualizado
-                    hotelName: "Meliá Costa del Sol",
-                    area: "Piscina",
-                    escalated: false,
-                    createdAt: new Date(Date.now() - 172800000), // Hace 2 días
-                    updatedAt: new Date(Date.now() - 43200000) // Hace 12 horas
-                },
-                { 
-                    id: 3, 
-                    title: "Pintar fachada interior", 
-                    description: "Repintar paredes del lobby principal",
-                    status: "done", 
-                    employee: "Carlos Mendoza", 
-                    employeeId: 3,
-                    hotel: "MELIA_BCN", // ⭐ Actualizado
-                    hotelName: "Meliá Barcelona City",
-                    area: "Mantenimiento",
-                    escalated: false,
-                    createdAt: new Date(Date.now() - 259200000), // Hace 3 días
-                    updatedAt: new Date(Date.now() - 86400000) // Ayer
                 }
             ];
         }
         
-        if (this.data.employees.length === 0) {
-            // Datos de empleados con hoteles específicos
-            this.data.employees = [
-                {
-                    id: 1,
-                    name: "Juan Pérez",
-                    position: "Técnico de Mantenimiento",
-                    department: "mantenimiento",
-                    hotel: "MELIA_PALMA", // ⭐ Actualizado
-                    hotelName: "Meliá Palma Bay",
-                    phone: "666111222",
-                    email: "juan.perez@melia.com",
-                    status: "active",
-                    hireDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-                    permissions: ["tasks", "inventory"]
-                },
-                {
-                    id: 2,
-                    name: "Lucía Gómez",
-                    position: "Especialista en Piscinas",
-                    department: "piscinas",
-                    hotel: "MELIA_COSTA", // ⭐ Actualizado
-                    hotelName: "Meliá Costa del Sol",
-                    phone: "666333444",
-                    email: "lucia.gomez@melia.com", 
-                    status: "active",
-                    hireDate: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000),
-                    permissions: ["pools", "chemicals"]
-                },
-                {
-                    id: 3,
-                    name: "Carlos Mendoza",
-                    position: "Supervisor de Mantenimiento",
-                    department: "mantenimiento", 
-                    hotel: "MELIA_BCN", // ⭐ Actualizado
-                    hotelName: "Meliá Barcelona City",
-                    phone: "666555666",
-                    email: "carlos.mendoza@melia.com",
-                    status: "active",
-                    hireDate: new Date(Date.now() - 300 * 24 * 60 * 60 * 1000),
-                    permissions: ["tasks", "inventory", "employees"]
-                }
-            ];
-        }
-        
-        if (this.data.inventory.length === 0) {
-            // Datos de inventario con hoteles específicos
-            this.data.inventory = [
-                {
-                    id: 1,
-                    name: "Cloro líquido",
-                    category: "chemical",
-                    currentQuantity: 50,
-                    minQuantity: 20,
-                    maxQuantity: 100,
-                    unit: "L",
-                    hotel: "MELIA_PALMA", // ⭐ Actualizado
-                    hotelName: "Meliá Palma Bay",
-                    location: "Almacén Químicos",
-                    status: "good",
-                    essential: true,
-                    lastUpdated: new Date()
-                },
-                {
-                    id: 2,
-                    name: "Filtros de arena",
-                    category: "maintenance",
-                    currentQuantity: 5,
-                    minQuantity: 10,
-                    maxQuantity: 25,
-                    unit: "unidades",
-                    hotel: "MELIA_COSTA", // ⭐ Actualizado
-                    hotelName: "Meliá Costa del Sol",
-                    location: "Almacén Piscina",
-                    status: "low",
-                    essential: true,
-                    lastUpdated: new Date()
-                },
-                {
-                    id: 3,
-                    name: "Productos de limpieza",
-                    category: "cleaning",
-                    currentQuantity: 0, // ⭐ Stock agotado para probar alertas
-                    minQuantity: 15,
-                    maxQuantity: 40,
-                    unit: "unidades",
-                    hotel: "MELIA_BCN", // ⭐ Actualizado
-                    hotelName: "Meliá Barcelona City",
-                    location: "Almacén Limpieza",
-                    status: "low",
-                    essential: true,
-                    lastUpdated: new Date()
-                }
-            ];
-        }
-        
-        console.log('✅ AppState inicializado con estructura multi-cliente');
-        console.log(`📊 Cliente: ${this.data.clientLicense.clientName}`);
-        console.log(`🏨 Hoteles: ${this.data.hotels.length}/${this.data.clientLicense.limits.maxHotels}`);
-        console.log(`👤 Usuario: ${this.data.currentUser.name} (${this.data.currentUser.userLevel})`);
+        console.log('✅ Datos de ejemplo creados');
     },
     
     // Obtener datos
@@ -397,16 +233,54 @@ const AppState = {
     // Notificar cambios
     notifyListeners: function(key, value) {
         if (this.listeners[key]) {
-            this.listeners[key].forEach(callback => callback(value));
+            this.listeners[key].forEach(callback => {
+                try {
+                    callback(value);
+                } catch (error) {
+                    console.warn(`Error en listener de ${key}:`, error);
+                }
+            });
+        }
+    },
+    
+    // ⭐ FUNCIÓN NOTIFYALL (Para evitar errores)
+    notifyAll: function() {
+        console.log('📢 Notificando a todos los listeners...');
+        for (const [key, callbacks] of Object.entries(this.listeners)) {
+            const value = this.get(key);
+            callbacks.forEach(callback => {
+                try {
+                    callback(value);
+                } catch (error) {
+                    console.warn(`Error en listener de ${key}:`, error);
+                }
+            });
         }
     },
     
     // Guardar en localStorage
     saveToLocalStorage: function() {
         try {
-            localStorage.setItem('prestotel_state', JSON.stringify(this.data));
+            // ⭐ SOLO GUARDAR DATOS IMPORTANTES (sin datos sensibles)
+            const dataToSave = {
+                currentModule: this.data.currentModule,
+                hotels: this.data.hotels,
+                tasks: this.data.tasks,
+                employees: this.data.employees,
+                inventory: this.data.inventory,
+                orders: this.data.orders,
+                chemicals: this.data.chemicals,
+                shifts: this.data.shifts,
+                winterTasks: this.data.winterTasks,
+                pools: this.data.pools,
+                poolRecords: this.data.poolRecords,
+                poolIncidents: this.data.poolIncidents,
+                protocolCalculations: this.data.protocolCalculations
+            };
+            
+            localStorage.setItem('prestotel_state', JSON.stringify(dataToSave));
         } catch (error) {
-            console.error('Error al guardar en localStorage:', error);
+            console.error('❌ Error al guardar en localStorage:', error);
         }
     },
     
@@ -417,59 +291,61 @@ const AppState = {
             if (saved) {
                 const parsedData = JSON.parse(saved);
                 
-                // Mergear datos guardados con estructura nueva
-                this.data = { ...this.data, ...parsedData };
+                // ⭐ MERGEAR SOLO DATOS OPERATIVOS (no usuario ni licencia)
+                Object.keys(parsedData).forEach(key => {
+                    if (key !== 'currentUser' && key !== 'clientLicense' && key !== 'isAuthenticated') {
+                        this.data[key] = parsedData[key];
+                    }
+                });
                 
-                // Asegurar que la estructura nueva existe
-                if (!this.data.clientLicense) {
-                    this.data.clientLicense = {
-                        clientId: "MELIA_2025",
-                        clientName: "Meliá Hotels International",
-                        plan: "enterprise",
-                        status: "active",
-                        limits: { maxHotels: 25, maxUsers: 100 },
-                        enabledModules: ["tasks", "inventory", "pools", "chemicals", "employees", "shifts", "winter", "admin"]
-                    };
-                }
-                
-                if (!this.data.currentUser) {
-                    this.data.currentUser = {
-                        id: 1,
-                        email: "admin@melia.com",
-                        name: "Administrador Meliá",
-                        userLevel: "client_admin",
-                        assignedHotels: ["ALL"],
-                        currentHotelContext: "ALL",
-                        permissions: {
-                            canCreateHotels: true,
-                            canManageUsers: true,
-                            canViewReports: true,
-                            canAccessAdmin: true
-                        }
-                    };
-                }
-                
-                console.log('✅ Estado cargado desde localStorage');
+                console.log('✅ Datos operativos cargados desde localStorage');
                 return true;
             }
         } catch (error) {
-            console.error('Error al cargar desde localStorage:', error);
+            console.error('❌ Error al cargar desde localStorage:', error);
         }
         return false;
+    },
+    
+    // ⭐ FUNCIÓN: Limpiar localStorage
+    clearLocalStorage: function() {
+        try {
+            localStorage.removeItem('prestotel_state');
+            console.log('🗑️ localStorage limpiado');
+        } catch (error) {
+            console.error('❌ Error al limpiar localStorage:', error);
+        }
     }
 };
 
-// Agregar al final de appState.js
-AppState.notifyAll = function() {
-  // Notificar a todos los listeners
-  for (const [key, callbacks] of Object.entries(this.listeners)) {
-    const value = this.state[key];
-    callbacks.forEach(callback => {
-      try {
-        callback(value);
-      } catch (error) {
-        console.warn(`Error en listener de ${key}:`, error);
-      }
-    });
-  }
+// ====================================================
+// FUNCIONES GLOBALES DE UTILIDAD
+// ====================================================
+
+// Hacer disponible globalmente para debug
+window.AppState = AppState;
+
+// Función para limpiar todo (para testing)
+window.clearAllData = function() {
+    if (confirm('🗑️ ¿Seguro que quieres limpiar TODOS los datos?')) {
+        AppState.clearAllData();
+        AppState.clearLocalStorage();
+        console.log('✅ Sistema completamente limpio');
+        // Opcional: recargar página
+        if (confirm('🔄 ¿Recargar página para ver cambios?')) {
+            window.location.reload();
+        }
+    }
 };
+
+// Función para crear datos de ejemplo (para testing)
+window.createSampleData = function() {
+    AppState.createSampleData();
+    console.log('✅ Datos de ejemplo creados');
+    // Opcional: recargar dashboard
+    if (typeof updateDashboardContentWithAlerts === 'function') {
+        updateDashboardContentWithAlerts();
+    }
+};
+
+console.log('🧹 AppState limpio cargado - Sistema listo para datos reales');

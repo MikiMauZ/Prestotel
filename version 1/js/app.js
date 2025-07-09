@@ -505,7 +505,7 @@ function updateDashboardContentWithAlerts() {
         
         <div class="dashboard-column">
           <!-- WIDGET DE LICENCIA (Solo si es vista consolidada o admin) -->
-          ${(context === 'ALL' || (currentUser && currentUser.userLevel === 'client_admin')) ? `
+          ${(currentUser && currentUser.userLevel === 'client_admin') ? `
             ${typeof LicensingModule !== 'undefined' ? LicensingModule.renderLicenseWidget() : ''}
           ` : ''}
           

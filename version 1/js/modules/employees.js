@@ -56,63 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (AppState.get('employees').length === 0) {
         console.log('Cargando datos de ejemplo para empleados...');
         
-        const mockEmployees = [
-          {
-            id: 1,
-            name: "Juan Pérez",
-            position: "Técnico de Mantenimiento",
-            department: "mantenimiento",
-            hotel: "Wave",
-            phone: "678123456",
-            email: "juan@example.com",
-            status: "active",
-            createdAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000) // 180 días atrás
-          },
-          {
-            id: 2,
-            name: "Lucía Gómez",
-            position: "Limpieza Piscinas",
-            department: "limpieza",
-            hotel: "Sky",
-            phone: "678234567",
-            email: "lucia@example.com",
-            status: "active",
-            createdAt: new Date(Date.now() - 150 * 24 * 60 * 60 * 1000)
-          },
-          {
-            id: 3,
-            name: "Mario Ruiz",
-            position: "Pintor",
-            department: "mantenimiento",
-            hotel: "Palm",
-            phone: "678345678",
-            email: "mario@example.com",
-            status: "active",
-            createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000)
-          },
-          {
-            id: 4,
-            name: "Ana Martínez",
-            position: "Recepcionista",
-            department: "recepcion",
-            hotel: "Wave",
-            phone: "678456789",
-            email: "ana@example.com",
-            status: "active",
-            createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-          },
-          {
-            id: 5,
-            name: "Carlos López",
-            position: "Jefe de Cocina",
-            department: "cocina",
-            hotel: "Sky",
-            phone: "678567890",
-            email: "carlos@example.com",
-            status: "inactive",
-            createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
-          }
-        ];
+        const mockEmployees = [];
         
         // Guardar en AppState
         AppState.data.employees = mockEmployees;

@@ -1,425 +1,503 @@
 // ====================================================
-// MÓDULO DE ADMINISTRACIÓN COMPLETO - js/modules/admin.js
+// SUPER ADMIN CON FIREBASE - CLIENTES Y USUARIOS
 // ====================================================
-// Sistema de administración con control de licencias integrado
 
 // Variables globales del módulo
-let adminView;
-let currentHotelId = null;
-let currentPoolTypeId = null;
-let currentUserId = null;
+let isLoading = false;
+let currentView = 'clients'; // 'clients' or 'users'
 
 // ====================================================
 // INICIALIZACIÓN PRINCIPAL
 // ====================================================
 
 function initAdminModule() {
-    console.log('🔧 Inicializando módulo de administración...');
+    console.log('👑 Inicializando Super Admin con gestión de usuarios...');
     
-    // Buscar o crear la vista del módulo
-    adminView = document.getElementById('admin-view');
+    const adminView = document.getElementById('admin-view');
+    const currentUser = AppState.get('currentUser');
+    
+    // Verificar que existe la vista
     if (!adminView) {
-        console.log('Vista de administración no encontrada. Creándola...');
-        adminView = document.createElement('div');
-        adminView.id = 'admin-view';
-        adminView.className = 'module-view hidden';
-        const contentContainer = document.querySelector('.content');
-        if (contentContainer) {
-            contentContainer.appendChild(adminView);
-        } else {
-            console.error('ERROR: No se encontró el contenedor .content');
-            return;
-        }
-    }
-    
-    // Verificar permisos de administración
-    if (!checkAdminAccess()) {
+        console.error('❌ No se encontró admin-view');
         return;
     }
     
-    // Cargar datos necesarios
-    loadConfigurationData();
+    // Verificar que es Super Admin
+    if (!currentUser || currentUser.userLevel !== 'super_admin') {
+        renderAccessDenied(adminView);
+        return;
+    }
     
-    // Renderizar estructura del módulo
-    renderModuleStructure();
+    // Renderizar estado de carga
+    renderLoadingState(adminView, currentUser);
     
-    // Configurar eventos
-    setupAdminEvents();
+    // Cargar datos desde Firebase
+    loadAllFirebaseData(currentUser);
     
-    console.log('✅ Módulo de administración inicializado correctamente');
+    console.log('✅ Super Admin con usuarios inicializado');
 }
 
 // ====================================================
-// VERIFICACIÓN DE PERMISOS
+// CARGA DE DATOS DESDE FIREBASE
 // ====================================================
 
-function checkAdminAccess() {
-    const currentUser = AppState.get('currentUser');
-    
-    // Verificar si el usuario existe y tiene permisos de admin
-    if (!currentUser) {
-        console.warn('⚠️ No hay usuario actual definido');
-        renderAccessDenied('No hay sesión activa');
-        return false;
+async function loadAllFirebaseData(currentUser) {
+    try {
+        isLoading = true;
+        console.log('🔥 Cargando clientes y usuarios desde Firebase...');
+        
+        // Cargar datos en paralelo
+        const [clients, users] = await Promise.all([
+            loadClientsFromFirestore(),
+            loadUsersFromFirestore()
+        ]);
+        
+        console.log(`📊 Datos cargados - Clientes: ${clients.length}, Usuarios: ${users.length}`);
+        
+        // Actualizar AppState para compatibilidad
+        AppState.update('clients', clients);
+        AppState.update('allUsers', users);
+        
+        // Renderizar interfaz completa
+        renderSuperAdminWithTabs(currentUser, clients, users);
+        
+        isLoading = false;
+        
+    } catch (error) {
+        console.error('❌ Error cargando datos de Firebase:', error);
+        isLoading = false;
+        
+        const adminView = document.getElementById('admin-view');
+        renderError(adminView, error.message);
     }
-    
-    // Verificar nivel de usuario (client_admin o super_admin)
-    const allowedLevels = ['client_admin', 'super_admin'];
-    if (!allowedLevels.includes(currentUser.userLevel)) {
-        console.warn(`⚠️ Usuario sin permisos de admin: ${currentUser.userLevel}`);
-        renderAccessDenied('Permisos insuficientes');
-        return false;
-    }
-    
-    // Verificar que el módulo admin esté habilitado en la licencia
-    if (!LicensingModule.isModuleEnabled('admin')) {
-        console.warn('⚠️ Módulo de administración no habilitado en la licencia');
-        renderAccessDenied('Módulo no habilitado en tu plan');
-        return false;
-    }
-    
-    console.log(`✅ Acceso de administración verificado para: ${currentUser.name} (${currentUser.userLevel})`);
-    return true;
 }
 
-function renderAccessDenied(reason) {
+async function loadClientsFromFirestore() {
+    try {
+        const snapshot = await db.collection('clients').orderBy('createdAt', 'desc').get();
+        const clients = [];
+        
+        snapshot.forEach(doc => {
+            clients.push({
+                firestoreId: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        return clients;
+        
+    } catch (error) {
+        console.error('❌ Error cargando clientes:', error);
+        return AppState.get('clients') || [];
+    }
+}
+
+async function loadUsersFromFirestore() {
+    try {
+        const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+        const users = [];
+        
+        snapshot.forEach(doc => {
+            users.push({
+                uid: doc.id,
+                firestoreId: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        return users;
+        
+    } catch (error) {
+        console.error('❌ Error cargando usuarios:', error);
+        return [];
+    }
+}
+
+// ====================================================
+// RENDERIZADO DE INTERFAZ CON PESTAÑAS
+// ====================================================
+
+function renderLoadingState(adminView, currentUser) {
     adminView.innerHTML = `
-        <div class="access-denied">
-            <div class="access-denied-content">
-                <i class="fas fa-lock"></i>
-                <h2>Acceso Denegado</h2>
-                <p>No tienes permisos para acceder al panel de administración.</p>
-                <p><strong>Motivo:</strong> ${reason}</p>
-                <button id="go-to-dashboard" class="btn btn-primary">
-                    <i class="fas fa-arrow-left"></i> Volver al Panel Principal
+        <div style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
+            <div style="margin-bottom: 3rem;">
+                <h2 style="color: #2c3e50; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-crown" style="color: #ffc107;"></i> 
+                    Panel Super Admin
+                    <span style="font-size: 0.9rem; color: #6c757d; font-weight: normal;">- ${currentUser.name}</span>
+                </h2>
+                
+                <div style="background: #d1ecf1; padding: 1rem; border-radius: 8px; border: 1px solid #bee5eb;">
+                    <i class="fas fa-info-circle" style="color: #0c5460;"></i>
+                    <strong>Modo Super Admin:</strong> Cargando clientes y usuarios desde Firebase...
+                </div>
+            </div>
+            
+            <div style="text-align: center; padding: 4rem 2rem; color: #6c757d;">
+                <i class="fas fa-spinner fa-spin fa-3x" style="color: #007bff; margin-bottom: 1.5rem;"></i>
+                <h3 style="color: #495057; margin-bottom: 1rem;">Cargando datos...</h3>
+                <p>Conectando con Firestore...</p>
+            </div>
+        </div>
+    `;
+}
+
+function renderError(adminView, errorMessage) {
+    adminView.innerHTML = `
+        <div style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
+            <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Error de Conexión:</strong> ${errorMessage}
+            </div>
+            
+            <div style="text-align: center; padding: 2rem;">
+                <button onclick="initAdminModule()" style="background: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-redo"></i> Reintentar
                 </button>
             </div>
         </div>
     `;
-    
-    // Configurar botón para volver al dashboard
-    const btnGoToDashboard = document.getElementById('go-to-dashboard');
-    if (btnGoToDashboard) {
-        btnGoToDashboard.addEventListener('click', () => {
-            showModule('dashboard-view');
-        });
-    }
 }
 
-// ====================================================
-// ESTRUCTURA PRINCIPAL DEL MÓDULO
-// ====================================================
-
-function renderModuleStructure() {
-    const currentUser = AppState.get('currentUser');
-    const licenseInfo = LicensingModule.getLicenseStatus();
-    
+function renderAccessDenied(adminView) {
     adminView.innerHTML = `
-        <h2 class="section-title">
-            <i class="fas fa-cogs"></i> Administración
-            <span class="admin-user-info">- ${currentUser.name} (${currentUser.userLevel})</span>
-        </h2>
-        
-        <!-- Información de Licencia (Widget Superior) -->
-        <div class="admin-license-info">
-            ${LicensingModule.renderLicenseWidget()}
-        </div>
-        
-        <!-- Navegación de pestañas -->
-        <div class="admin-tabs">
-            <ul class="nav-tabs">
-                <li class="nav-item">
-                    <a class="nav-link active" data-tab="hotels-tab">
-                        <i class="fas fa-hotel"></i> Hoteles
-                        <span class="tab-counter">${licenseInfo.hotelsUsed}/${licenseInfo.hotelsLimit}</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-tab="pool-types-tab">
-                        <i class="fas fa-swimming-pool"></i> Tipos de Piscina
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-tab="users-tab">
-                        <i class="fas fa-users-cog"></i> Usuarios
-                        <span class="tab-counter">${licenseInfo.usersUsed}/${licenseInfo.usersLimit}</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-tab="settings-tab">
-                        <i class="fas fa-sliders-h"></i> Configuración
-                    </a>
-                </li>
-            </ul>
-            
-            <div class="tab-content">
-                <!-- Pestaña de Hoteles -->
-                <div id="hotels-tab" class="tab-pane active">
-                    ${renderHotelsTab()}
-                </div>
-                
-                <!-- Pestaña de Tipos de Piscina -->
-                <div id="pool-types-tab" class="tab-pane">
-                    ${renderPoolTypesTab()}
-                </div>
-                
-                <!-- Pestaña de Usuarios -->
-                <div id="users-tab" class="tab-pane">
-                    ${renderUsersTab()}
-                </div>
-                
-                <!-- Pestaña de Configuración -->
-                <div id="settings-tab" class="tab-pane">
-                    ${renderSettingsTab()}
-                </div>
+        <div style="display: flex; align-items: center; justify-content: center; min-height: 60vh; text-align: center;">
+            <div style="max-width: 400px; padding: 2rem;">
+                <i class="fas fa-crown" style="font-size: 3rem; color: #dc3545; margin-bottom: 1rem;"></i>
+                <h2 style="color: #dc3545;">Acceso Restringido</h2>
+                <p>Esta área es solo para Super Administradores de Prestotel</p>
+                <button onclick="showModule('dashboard-view')" class="btn btn-primary">
+                    Volver al Dashboard
+                </button>
             </div>
         </div>
     `;
 }
 
+function renderSuperAdminWithTabs(currentUser, clients, users) {
+    const adminView = document.getElementById('admin-view');
+    
+    // Calcular estadísticas
+    const clientUsers = users.filter(u => u.clientId); // Usuarios que pertenecen a clientes
+    const activeUsers = users.filter(u => u.active);
+    
+    adminView.innerHTML = `
+        <div style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
+            <!-- HEADER -->
+            <div style="margin-bottom: 3rem;">
+                <h2 style="color: #2c3e50; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-crown" style="color: #ffc107;"></i> 
+                    Panel Super Admin
+                    <span style="font-size: 0.9rem; color: #6c757d; font-weight: normal;">- ${currentUser.name}</span>
+                </h2>
+                
+                <div style="background: #d4edda; padding: 1rem; border-radius: 8px; border: 1px solid #c3e6cb;">
+                    <i class="fas fa-check-circle" style="color: #155724;"></i>
+                    <strong>Sistema Multi-Cliente:</strong> Gestión completa de clientes y usuarios en Firebase.
+                </div>
+            </div>
+            
+            <!-- ESTADÍSTICAS CONSOLIDADAS -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+                ${renderConsolidatedStats(clients, users)}
+            </div>
+            
+            <!-- NAVEGACIÓN DE PESTAÑAS -->
+            <div style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden;">
+                <!-- HEADER CON PESTAÑAS -->
+                <div style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 1.5rem 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-cogs"></i> Gestión del Sistema
+                            <i class="fas fa-cloud" style="font-size: 0.8rem; color: #17a2b8;" title="Conectado a Firebase"></i>
+                        </h3>
+                        <button onclick="refreshAllData()" style="background: #17a2b8; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-sync-alt"></i> Actualizar
+                        </button>
+                    </div>
+                    
+                    <!-- PESTAÑAS -->
+                    <div style="display: flex; gap: 1rem;">
+                        <button onclick="switchTab('clients')" id="tab-clients" style="background: ${currentView === 'clients' ? '#007bff' : 'transparent'}; color: white; padding: 0.75rem 1.5rem; border: ${currentView === 'clients' ? 'none' : '2px solid rgba(255,255,255,0.3)'}; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-building"></i> Clientes (${clients.length})
+                        </button>
+                        <button onclick="switchTab('users')" id="tab-users" style="background: ${currentView === 'users' ? '#007bff' : 'transparent'}; color: white; padding: 0.75rem 1.5rem; border: ${currentView === 'users' ? 'none' : '2px solid rgba(255,255,255,0.3)'}; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-users"></i> Usuarios (${users.length})
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- CONTENIDO DE PESTAÑAS -->
+                <div style="padding: 2rem;">
+                    <div id="content-clients" style="display: ${currentView === 'clients' ? 'block' : 'none'};">
+                        ${renderClientsContent(clients)}
+                    </div>
+                    
+                    <div id="content-users" style="display: ${currentView === 'users' ? 'block' : 'none'};">
+                        ${renderUsersContent(users, clients)}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    setupAllEvents();
+}
+
 // ====================================================
-// PESTAÑA DE HOTELES
+// ESTADÍSTICAS CONSOLIDADAS
 // ====================================================
 
-function renderHotelsTab() {
-    const hotels = AppState.get('hotels') || [];
-    const licenseInfo = LicensingModule.getLicenseStatus();
+function renderConsolidatedStats(clients, users) {
+    const activeClients = clients.filter(c => c.status === 'active').length;
+    const totalRevenue = clients.reduce((sum, c) => sum + (c.status === 'active' ? c.monthlyPrice : 0), 0);
+    const totalHotels = clients.reduce((sum, c) => sum + (c.stats ? c.stats.hotelsCount : 0), 0);
+    const clientUsers = users.filter(u => u.clientId).length;
+    const activeUsers = users.filter(u => u.active).length;
     
     return `
-        <div class="tab-header">
-            <h3>Gestión de Hoteles</h3>
-            <div class="tab-header-actions">
-                <button id="btn-new-hotel" class="btn btn-primary" ${licenseInfo.atHotelLimit ? 'disabled title="Límite de hoteles alcanzado"' : ''}>
-                    <i class="fas fa-plus"></i> Nuevo Hotel
-                </button>
-                ${licenseInfo.nearHotelLimit ? `
-                    <div class="limit-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Cerca del límite (${licenseInfo.hotelsUsed}/${licenseInfo.hotelsLimit})
-                    </div>
-                ` : ''}
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #007bff, #0056b3); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
+                <i class="fas fa-building"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1.8rem; font-weight: 700; margin: 0; color: #2c3e50;">${clients.length}</h3>
+                <p style="font-size: 0.85rem; color: #6c757d; margin: 0;">Clientes</p>
+                <small style="font-size: 0.75rem; color: #95a5a6;">${activeClients} activos</small>
             </div>
         </div>
         
-        <div class="panel">
-            <p>Configura los hoteles que gestionará la aplicación. Cada hotel debe tener un código único que se utilizará internamente.</p>
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #28a745, #1e7e34); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
+                <i class="fas fa-users"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1.8rem; font-weight: 700; margin: 0; color: #2c3e50;">${users.length}</h3>
+                <p style="font-size: 0.85rem; color: #6c757d; margin: 0;">Usuarios</p>
+                <small style="font-size: 0.75rem; color: #95a5a6;">${activeUsers} activos</small>
+            </div>
+        </div>
+        
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #17a2b8, #117a8b); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
+                <i class="fas fa-hotel"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1.8rem; font-weight: 700; margin: 0; color: #2c3e50;">${totalHotels}</h3>
+                <p style="font-size: 0.85rem; color: #6c757d; margin: 0;">Hoteles</p>
+                <small style="font-size: 0.75rem; color: #95a5a6;">En gestión</small>
+            </div>
+        </div>
+        
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #ffc107, #e0a800); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
+                <i class="fas fa-euro-sign"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1.8rem; font-weight: 700; margin: 0; color: #2c3e50;">€${totalRevenue}</h3>
+                <p style="font-size: 0.85rem; color: #6c757d; margin: 0;">Ingresos</p>
+                <small style="font-size: 0.75rem; color: #95a5a6;">Mensuales</small>
+            </div>
+        </div>
+        
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #6f42c1, #5a2d91); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1.8rem; font-weight: 700; margin: 0; color: #2c3e50;">${clientUsers}</h3>
+                <p style="font-size: 0.85rem; color: #6c757d; margin: 0;">Usuarios Cliente</p>
+                <small style="font-size: 0.75rem; color: #95a5a6;">Con empresa</small>
+            </div>
+        </div>
+    `;
+}
+
+// ====================================================
+// CONTENIDO DE PESTAÑAS
+// ====================================================
+
+function renderClientsContent(clients) {
+    return `
+        <div style="margin-bottom: 2rem; display: flex; justify-content: between; align-items: center;">
+            <h4 style="margin: 0; color: #2c3e50; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-building"></i> Gestión de Clientes
+            </h4>
+            <button onclick="showCreateClientForm()" style="background: #28a745; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-plus"></i> Nuevo Cliente
+            </button>
+        </div>
+        
+        <!-- FORMULARIO CREAR CLIENTE -->
+        <div id="create-client-form" style="display: none; margin-bottom: 2rem; border: 2px solid #e9ecef; border-radius: 12px; overflow: hidden;">
+            ${renderCreateClientForm()}
+        </div>
+        
+        <!-- LISTA DE CLIENTES -->
+        ${renderClientsList(clients)}
+    `;
+}
+
+function renderUsersContent(users, clients) {
+    return `
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0; color: #2c3e50; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-users"></i> Gestión de Usuarios
+            </h4>
+            <button onclick="showCreateUserForm()" style="background: #17a2b8; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-user-plus"></i> Nuevo Usuario
+            </button>
+        </div>
+        
+        <!-- FORMULARIO CREAR USUARIO -->
+        <div id="create-user-form" style="display: none; margin-bottom: 2rem; border: 2px solid #e9ecef; border-radius: 12px; overflow: hidden;">
+            ${renderCreateUserForm(clients)}
+        </div>
+        
+        <!-- LISTA DE USUARIOS -->
+        ${renderUsersList(users, clients)}
+    `;
+}
+
+// ====================================================
+// FUNCIONES DE NAVEGACIÓN
+// ====================================================
+
+function switchTab(tabName) {
+    currentView = tabName;
+    
+    // Actualizar botones
+    document.getElementById('tab-clients').style.background = tabName === 'clients' ? '#007bff' : 'transparent';
+    document.getElementById('tab-clients').style.border = tabName === 'clients' ? 'none' : '2px solid rgba(255,255,255,0.3)';
+    
+    document.getElementById('tab-users').style.background = tabName === 'users' ? '#007bff' : 'transparent';
+    document.getElementById('tab-users').style.border = tabName === 'users' ? 'none' : '2px solid rgba(255,255,255,0.3)';
+    
+    // Mostrar/ocultar contenido
+    document.getElementById('content-clients').style.display = tabName === 'clients' ? 'block' : 'none';
+    document.getElementById('content-users').style.display = tabName === 'users' ? 'block' : 'none';
+    
+    console.log('📱 Cambiando a pestaña:', tabName);
+}
+
+async function refreshAllData() {
+    if (isLoading) return;
+    
+    const currentUser = AppState.get('currentUser');
+    if (currentUser && currentUser.userLevel === 'super_admin') {
+        await loadAllFirebaseData(currentUser);
+    }
+}
+
+// ====================================================
+// GESTIÓN DE USUARIOS - FORMULARIOS
+// ====================================================
+
+function renderCreateUserForm(clients) {
+    return `
+        <div style="background: linear-gradient(135deg, #17a2b8, #138496); color: white; padding: 1.25rem 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-user-plus"></i> Crear Nuevo Usuario
+                <i class="fas fa-cloud" style="font-size: 0.8rem;" title="Se guardará en Firebase"></i>
+            </h4>
+            <button onclick="hideCreateUserForm()" style="background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div style="padding: 2rem; background: white;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Nombre Completo *</label>
+                    <input type="text" id="user-name" placeholder="ej: María García López" 
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #e9ecef; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Email *</label>
+                    <input type="email" id="user-email" placeholder="ej: maria@mediteraneo.com"
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #e9ecef; border-radius: 8px;">
+                </div>
+            </div>
             
-            <!-- Formulario para añadir/editar hotel -->
-            <div id="hotel-form" class="form-container hidden">
-                <h4 class="form-title" id="hotel-form-title">Nuevo Hotel</h4>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="hotel-name">Nombre del hotel *</label>
-                        <input type="text" id="hotel-name" class="form-control" placeholder="Nombre completo" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="hotel-code">Código *</label>
-                        <input type="text" id="hotel-code" class="form-control" placeholder="Código corto (3-10 caracteres)" required>
-                        <small class="form-text">Código único para identificar el hotel internamente</small>
-                    </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Cliente *</label>
+                    <select id="user-client" style="width: 100%; padding: 0.75rem; border: 2px solid #e9ecef; border-radius: 8px;">
+                        <option value="">Seleccionar cliente...</option>
+                        ${clients.map(client => `
+                            <option value="${client.code}">${client.name} (${client.code})</option>
+                        `).join('')}
+                    </select>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="hotel-location">Ubicación</label>
-                        <input type="text" id="hotel-location" class="form-control" placeholder="Ciudad, País">
-                    </div>
-                    <div class="form-group">
-                        <label for="hotel-address">Dirección</label>
-                        <input type="text" id="hotel-address" class="form-control" placeholder="Dirección completa">
-                    </div>
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Nivel de Usuario *</label>
+                    <select id="user-level" style="width: 100%; padding: 0.75rem; border: 2px solid #e9ecef; border-radius: 8px;">
+                        <option value="">Seleccionar nivel...</option>
+                        <option value="client_admin">Client Admin - Administrador del cliente</option>
+                        <option value="hotel_manager">Hotel Manager - Gestor de hotel</option>
+                        <option value="department_head">Department Head - Jefe de departamento</option>
+                        <option value="employee">Employee - Empleado básico</option>
+                    </select>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="hotel-phone">Teléfono</label>
-                        <input type="tel" id="hotel-phone" class="form-control" placeholder="Teléfono de contacto">
-                    </div>
-                    <div class="form-group">
-                        <label for="hotel-email">Email</label>
-                        <input type="email" id="hotel-email" class="form-control" placeholder="Email de contacto">
-                    </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Teléfono</label>
+                    <input type="tel" id="user-phone" placeholder="ej: +34 600 000 000"
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #e9ecef; border-radius: 8px;">
                 </div>
-                <div class="form-group">
-                    <label class="form-check-label">
-                        <input type="checkbox" id="hotel-active" checked> Hotel activo
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Cargo/Posición</label>
+                    <input type="text" id="user-position" placeholder="ej: Administrador General"
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #e9ecef; border-radius: 8px;">
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Contraseña Temporal *</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="user-password" placeholder="Contraseña temporal"
+                           style="flex: 1; padding: 0.75rem; border: 2px solid #e9ecef; border-radius: 8px;">
+                    <button onclick="generateUserPassword()" style="padding: 0.75rem 1rem; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        <i class="fas fa-dice"></i> Generar
+                    </button>
+                </div>
+                <small style="color: #6c757d; font-size: 0.8rem;">El usuario deberá cambiarla en el primer acceso</small>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Permisos</label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px;">
+                        <input type="checkbox" id="perm-hotels" value="hotels">
+                        <span>Gestión de Hoteles</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px;">
+                        <input type="checkbox" id="perm-tasks" value="tasks">
+                        <span>Tareas</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px;">
+                        <input type="checkbox" id="perm-employees" value="employees">
+                        <span>Empleados</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px;">
+                        <input type="checkbox" id="perm-inventory" value="inventory">
+                        <span>Inventario</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px;">
+                        <input type="checkbox" id="perm-admin" value="admin">
+                        <span>Administración</span>
                     </label>
                 </div>
-                <div class="form-actions">
-                    <button id="cancel-hotel-btn" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                    <button id="save-hotel-btn" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Guardar
-                    </button>
-                </div>
             </div>
             
-            <!-- Lista de hoteles -->
-            <div class="hotels-list">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Código</th>
-                                <th>Ubicación</th>
-                                <th>Estado</th>
-                                <th>Creado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${hotels.map(hotel => `
-                                <tr class="${hotel.active ? '' : 'inactive'}">
-                                    <td>
-                                        <strong>${hotel.name}</strong>
-                                        ${hotel.email ? `<br><small class="text-muted">${hotel.email}</small>` : ''}
-                                    </td>
-                                    <td><code>${hotel.code}</code></td>
-                                    <td>${hotel.location || '-'}</td>
-                                    <td>
-                                        <span class="badge ${hotel.active ? 'badge-success' : 'badge-secondary'}">
-                                            ${hotel.active ? 'Activo' : 'Inactivo'}
-                                        </span>
-                                    </td>
-                                    <td>${hotel.createdAt ? new Date(hotel.createdAt).toLocaleDateString() : '-'}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="editHotel(${hotel.id})" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteHotel(${hotel.id})" title="Eliminar">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                    
-                    ${hotels.length === 0 ? `
-                        <div class="empty-state">
-                            <i class="fas fa-hotel fa-3x"></i>
-                            <h3>No hay hoteles configurados</h3>
-                            <p>Comienza agregando tu primer hotel</p>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function renderPoolTypesTab() {
-    return `
-        <div class="tab-header">
-            <h3>Gestión de Tipos de Piscina</h3>
-            <button id="btn-new-pool-type" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Nuevo Tipo de Piscina
-            </button>
-        </div>
-        
-        <div class="panel">
-            <p>Define los diferentes tipos de piscinas que se pueden configurar en el sistema.</p>
-            <!-- Contenido de tipos de piscina -->
-            <div class="empty-state">
-                <i class="fas fa-swimming-pool fa-3x"></i>
-                <h3>Gestión de Tipos de Piscina</h3>
-                <p>Esta funcionalidad se implementará próximamente</p>
-            </div>
-        </div>
-    `;
-}
-
-function renderUsersTab() {
-    return `
-        <div class="tab-header">
-            <h3>Gestión de Usuarios</h3>
-            <button id="btn-new-user" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Nuevo Usuario
-            </button>
-        </div>
-        
-        <div class="panel">
-            <p>Gestiona los usuarios que tienen acceso al sistema.</p>
-            <!-- Contenido de usuarios -->
-            <div class="empty-state">
-                <i class="fas fa-users-cog fa-3x"></i>
-                <h3>Gestión de Usuarios</h3>
-                <p>Esta funcionalidad se implementará próximamente</p>
-            </div>
-        </div>
-    `;
-}
-
-function renderSettingsTab() {
-    const clientLicense = AppState.get('clientLicense');
-    
-    return `
-        <div class="tab-header">
-            <h3>Configuración del Sistema</h3>
-        </div>
-        
-        <div class="panel">
-            <h4>Información de la Empresa</h4>
-            <div class="settings-section">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nombre de la empresa</label>
-                        <input type="text" class="form-control" value="${clientLicense.clientName}" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label>Plan actual</label>
-                        <input type="text" class="form-control" value="${clientLicense.plan.toUpperCase()}" readonly>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Estado de la licencia</label>
-                        <input type="text" class="form-control" value="${clientLicense.status.toUpperCase()}" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label>Vencimiento</label>
-                        <input type="text" class="form-control" value="${new Date(clientLicense.expiryDate).toLocaleDateString()}" readonly>
-                    </div>
-                </div>
-            </div>
-            
-            <h4>Límites del Plan</h4>
-            <div class="settings-section">
-                <div class="limits-grid">
-                    <div class="limit-item">
-                        <span class="limit-label">Hoteles máximos:</span>
-                        <span class="limit-value">${clientLicense.limits.maxHotels}</span>
-                    </div>
-                    <div class="limit-item">
-                        <span class="limit-label">Usuarios máximos:</span>
-                        <span class="limit-value">${clientLicense.limits.maxUsers}</span>
-                    </div>
-                    <div class="limit-item">
-                        <span class="limit-label">Almacenamiento:</span>
-                        <span class="limit-value">${clientLicense.limits.maxStorageGB} GB</span>
-                    </div>
-                    <div class="limit-item">
-                        <span class="limit-label">Tareas/mes:</span>
-                        <span class="limit-value">${clientLicense.limits.maxTasksPerMonth.toLocaleString()}</span>
-                    </div>
-                </div>
-            </div>
-            
-            <h4>Módulos Habilitados</h4>
-            <div class="settings-section">
-                <div class="modules-grid">
-                    ${clientLicense.enabledModules.map(module => `
-                        <div class="module-item enabled">
-                            <i class="fas fa-check-circle"></i>
-                            <span>${getModuleDisplayName(module)}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            
-            <div class="settings-actions">
-                <button class="btn btn-primary" onclick="LicensingModule.contactPrestotel()">
-                    <i class="fas fa-phone"></i> Contactar con Prestotel
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button onclick="hideCreateUserForm()" style="padding: 0.75rem 1.5rem; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    Cancelar
+                </button>
+                <button onclick="createUserInFirebase()" style="padding: 0.75rem 1.5rem; background: #17a2b8; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-cloud-upload-alt"></i> Crear Usuario
                 </button>
             </div>
         </div>
@@ -427,574 +505,666 @@ function renderSettingsTab() {
 }
 
 // ====================================================
-// GESTIÓN DE HOTELES - FUNCIONES PRINCIPALES
+// RENDERIZADO DE LISTAS
 // ====================================================
 
-function showHotelForm() {
-    // ⭐ NUEVA VALIDACIÓN DE LÍMITES ANTES DE MOSTRAR FORMULARIO
-    const validation = LicensingModule.canCreateHotel();
-    
-    if (!validation.allowed) {
-        console.warn('🚫 Intento de crear hotel bloqueado:', validation.message);
-        Utils.showToast(validation.message, 'error');
-        
-        if (validation.needsUpgrade) {
-            // Mostrar modal de upgrade después de un breve delay
-            setTimeout(() => {
-                LicensingModule.showUpgradeModal('hotels');
-            }, 500);
-        }
-        
-        return; // ❌ BLOQUEAR CREACIÓN DE HOTEL
+function renderClientsList(clients) {
+    if (clients.length === 0) {
+        return `
+            <div style="text-align: center; padding: 4rem 2rem; color: #6c757d;">
+                <i class="fas fa-building fa-3x" style="color: #dee2e6; margin-bottom: 1.5rem;"></i>
+                <h3 style="color: #495057; margin-bottom: 1rem;">No hay clientes en Firebase</h3>
+                <p style="margin-bottom: 1.5rem;">Comienza creando tu primer cliente.</p>
+                <button onclick="showCreateClientForm()" style="background: #28a745; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-plus"></i> Crear Primer Cliente
+                </button>
+            </div>
+        `;
     }
     
-    // ✅ PERMITIR CREACIÓN - Mostrar advertencia si está cerca del límite
-    if (validation.warning) {
-        console.warn('⚠️ Cerca del límite de hoteles:', validation.message);
-        Utils.showToast(validation.message, 'warning', 4000);
-    }
+    let html = '<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse;">';
+    html += '<thead><tr style="background: #f8f9fa;">';
+    html += '<th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dee2e6;">Cliente</th>';
+    html += '<th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dee2e6;">Plan</th>';
+    html += '<th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dee2e6;">Usuarios</th>';
+    html += '<th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dee2e6;">Estado</th>';
+    html += '<th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dee2e6;">Acciones</th>';
+    html += '</tr></thead><tbody>';
     
-    // 📊 LOG DE ACCIÓN PERMITIDA
-    LicensingModule.logLicenseAction('hotel_form_opened', {
-        currentHotels: validation.currentCount,
-        maxHotels: validation.maxCount,
-        nearLimit: validation.warning || false
+    clients.forEach(client => {
+        const users = AppState.get('allUsers') || [];
+        const clientUsers = users.filter(u => u.clientId === client.code);
+        const activeUsers = clientUsers.filter(u => u.active);
+        
+        html += `
+            <tr style="border-bottom: 1px solid #e9ecef;">
+                <td style="padding: 1rem; vertical-align: middle;">
+                    <strong style="color: #2c3e50;">${client.name}</strong><br>
+                    <small style="color: #6c757d;">${client.email}</small><br>
+                    <code style="background: #e9ecef; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">${client.code}</code>
+                </td>
+                <td style="padding: 1rem; vertical-align: middle;">
+                    <span style="background: #007bff; color: white; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.8rem; text-transform: uppercase;">
+                        ${client.plan}
+                    </span><br>
+                    <small style="color: #6c757d;">€${client.monthlyPrice}/mes</small>
+                </td>
+                <td style="padding: 1rem; vertical-align: middle;">
+                    <strong style="color: #17a2b8;">${clientUsers.length}</strong> usuarios<br>
+                    <small style="color: #6c757d;">${activeUsers.length} activos</small><br>
+                    <small style="color: #6c757d;">Límite: ${client.limits.maxUsers}</small>
+                </td>
+                <td style="padding: 1rem; vertical-align: middle;">
+                    <span style="background: ${client.status === 'active' ? '#28a745' : '#dc3545'}; color: white; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.8rem;">
+                        ${client.status === 'active' ? 'Activo' : 'Inactivo'}
+                    </span>
+                </td>
+                <td style="padding: 1rem; vertical-align: middle;">
+                    <button onclick="viewClientUsers('${client.code}')" style="background: #17a2b8; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; margin-right: 0.5rem;">
+                        <i class="fas fa-users"></i> Ver Usuarios
+                    </button>
+                    <button onclick="viewClientFromFirebase('${client.firestoreId}')" style="background: #28a745; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-eye"></i> Detalles
+                    </button>
+                </td>
+            </tr>
+        `;
     });
     
-    // Limpiar formulario para nuevo hotel
-    document.getElementById('hotel-name').value = '';
-    document.getElementById('hotel-code').value = '';
-    document.getElementById('hotel-location').value = '';
-    document.getElementById('hotel-address').value = '';
-    document.getElementById('hotel-phone').value = '';
-    document.getElementById('hotel-email').value = '';
-    document.getElementById('hotel-active').checked = true;
-    
-    // Actualizar título del formulario
-    document.getElementById('hotel-form-title').textContent = 'Nuevo Hotel';
-    
-    // Limpiar ID actual
-    currentHotelId = null;
-    
-    // Mostrar formulario
-    const hotelForm = document.getElementById('hotel-form');
-    if (hotelForm) {
-        hotelForm.classList.remove('hidden');
-        document.getElementById('hotel-name').focus();
-    }
-    
-    console.log('📋 Formulario de nuevo hotel mostrado');
+    html += '</tbody></table></div>';
+    return html;
 }
 
-function editHotel(hotelId) {
-    const hotels = AppState.get('hotels');
-    const hotel = hotels.find(h => h.id === hotelId);
-    
-    if (!hotel) {
-        Utils.showToast('Hotel no encontrado', 'error');
-        return;
+function renderUsersList(users, clients) {
+    if (users.length === 0) {
+        return `
+            <div style="text-align: center; padding: 4rem 2rem; color: #6c757d;">
+                <i class="fas fa-users fa-3x" style="color: #dee2e6; margin-bottom: 1.5rem;"></i>
+                <h3 style="color: #495057; margin-bottom: 1rem;">No hay usuarios registrados</h3>
+                <p style="margin-bottom: 1.5rem;">Comienza creando usuarios para tus clientes.</p>
+                <button onclick="showCreateUserForm()" style="background: #17a2b8; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-user-plus"></i> Crear Primer Usuario
+                </button>
+            </div>
+        `;
     }
     
-    // Llenar formulario con datos existentes
-    document.getElementById('hotel-name').value = hotel.name || '';
-    document.getElementById('hotel-code').value = hotel.code || '';
-    document.getElementById('hotel-location').value = hotel.location || '';
-    document.getElementById('hotel-address').value = hotel.address || '';
-    document.getElementById('hotel-phone').value = hotel.phone || '';
-    document.getElementById('hotel-email').value = hotel.email || '';
-    document.getElementById('hotel-active').checked = hotel.active !== false;
+    let html = '<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse;">';
+    html += '<thead><tr style="background: #f8f9fa;">';
+    html += '<th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dee2e6;">Usuario</th>';
+    html += '<th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dee2e6;">Cliente</th>';
+    html += '<th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dee2e6;">Nivel</th>';
+    html += '<th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dee2e6;">Estado</th>';
+    html += '<th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dee2e6;">Acciones</th>';
+    html += '</tr></thead><tbody>';
     
-    // Actualizar título del formulario
-    document.getElementById('hotel-form-title').textContent = 'Editar Hotel';
+    users.forEach(user => {
+        const client = clients.find(c => c.code === user.clientId);
+        const userLevelColors = {
+            super_admin: '#6f42c1',
+            client_admin: '#007bff',
+            hotel_manager: '#28a745',
+            department_head: '#ffc107',
+            employee: '#6c757d'
+        };
+        
+        const userLevelNames = {
+            super_admin: 'Super Admin',
+            client_admin: 'Client Admin',
+            hotel_manager: 'Hotel Manager',
+            department_head: 'Jefe Departamento',
+            employee: 'Empleado'
+        };
+        
+        html += `
+            <tr style="border-bottom: 1px solid #e9ecef;">
+                <td style="padding: 1rem; vertical-align: middle;">
+                    <strong style="color: #2c3e50;">${user.name}</strong><br>
+                    <small style="color: #6c757d;">${user.email}</small><br>
+                    ${user.profile?.position ? `<small style="color: #95a5a6;">${user.profile.position}</small>` : ''}
+                </td>
+                <td style="padding: 1rem; vertical-align: middle;">
+                    ${client ? `
+                        <strong style="color: #007bff;">${client.name}</strong><br>
+                        <code style="background: #e9ecef; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">${client.code}</code>
+                    ` : `
+                        <span style="color: #6c757d;">Sistema</span>
+                    `}
+                </td>
+                <td style="padding: 1rem; vertical-align: middle;">
+                    <span style="background: ${userLevelColors[user.userLevel] || '#6c757d'}; color: white; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.8rem;">
+                        ${userLevelNames[user.userLevel] || user.userLevel}
+                    </span>
+                    ${user.mustChangePassword ? '<br><small style="color: #dc3545;">Debe cambiar contraseña</small>' : ''}
+                </td>
+                <td style="padding: 1rem; vertical-align: middle;">
+                    <span style="background: ${user.active ? '#28a745' : '#dc3545'}; color: white; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.8rem;">
+                        ${user.active ? 'Activo' : 'Inactivo'}
+                    </span>
+                    ${user.lastLogin ? `<br><small style="color: #6c757d;">Último: ${new Date(user.lastLogin).toLocaleDateString()}</small>` : '<br><small style="color: #6c757d;">Nunca conectado</small>'}
+                </td>
+                <td style="padding: 1rem; vertical-align: middle;">
+                    <button onclick="viewUserDetails('${user.uid}')" style="background: #17a2b8; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; margin-right: 0.5rem;">
+                        <i class="fas fa-eye"></i> Ver
+                    </button>
+                    <button onclick="toggleUserStatus('${user.uid}', ${!user.active})" style="background: ${user.active ? '#ffc107' : '#28a745'}; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-${user.active ? 'pause' : 'play'}"></i> ${user.active ? 'Suspender' : 'Activar'}
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
     
-    // Guardar ID para actualización
-    currentHotelId = hotelId;
-    
-    // Mostrar formulario
-    const hotelForm = document.getElementById('hotel-form');
-    if (hotelForm) {
-        hotelForm.classList.remove('hidden');
-        document.getElementById('hotel-name').focus();
-    }
-    
-    console.log(`✏️ Editando hotel ID: ${hotelId}`);
+    html += '</tbody></table></div>';
+    return html;
 }
 
-function saveHotel() {
-    // Obtener valores del formulario
-    const name = document.getElementById('hotel-name').value.trim();
-    const code = document.getElementById('hotel-code').value.trim();
-    const location = document.getElementById('hotel-location').value.trim();
-    const address = document.getElementById('hotel-address').value.trim();
-    const phone = document.getElementById('hotel-phone').value.trim();
-    const email = document.getElementById('hotel-email').value.trim();
-    const active = document.getElementById('hotel-active').checked;
+// ====================================================
+// FUNCIONES DE USUARIOS
+// ====================================================
+
+function showCreateUserForm() {
+    const form = document.getElementById('create-user-form');
+    if (form) {
+        form.style.display = 'block';
+        document.getElementById('user-name').focus();
+    }
+}
+
+function hideCreateUserForm() {
+    const form = document.getElementById('create-user-form');
+    if (form) {
+        form.style.display = 'none';
+    }
+    clearUserForm();
+}
+
+function clearUserForm() {
+    const fields = ['user-name', 'user-email', 'user-client', 'user-level', 'user-phone', 'user-position', 'user-password'];
+    fields.forEach(id => {
+        const field = document.getElementById(id);
+        if (field) field.value = '';
+    });
     
-    // Validar campos obligatorios
-    if (!name) {
-        Utils.showToast('Por favor introduce un nombre para el hotel', 'error');
-        document.getElementById('hotel-name').focus();
-        return;
+    // Limpiar checkboxes
+    const permissions = ['hotels', 'tasks', 'employees', 'inventory', 'admin'];
+    permissions.forEach(perm => {
+        const checkbox = document.getElementById(`perm-${perm}`);
+        if (checkbox) checkbox.checked = false;
+    });
+}
+
+function generateUserPassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let password = 'Prestotel';
+    for (let i = 0; i < 6; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     
-    if (!code) {
-        Utils.showToast('Por favor introduce un código para el hotel', 'error');
-        document.getElementById('hotel-code').focus();
-        return;
+    const field = document.getElementById('user-password');
+    if (field) {
+        field.value = password + '!';
     }
+}
+
+async function createUserInFirebase() {
+    if (isLoading) return;
     
-    // Validar longitud del código
-    if (code.length < 3 || code.length > 10) {
-        Utils.showToast('El código debe tener entre 3 y 10 caracteres', 'error');
-        document.getElementById('hotel-code').focus();
-        return;
-    }
-    
-    // Validar email si se proporciona
-    if (email && !isValidEmail(email)) {
-        Utils.showToast('Por favor introduce un email válido', 'error');
-        document.getElementById('hotel-email').focus();
-        return;
-    }
-    
-    // Preparar datos del hotel
-    const hotelData = {
-        name,
-        code: code.toUpperCase(),
-        location,
-        address,
-        phone,
-        email,
-        active,
-        updatedAt: new Date()
+    const data = {
+        name: document.getElementById('user-name').value.trim(),
+        email: document.getElementById('user-email').value.trim(),
+        clientId: document.getElementById('user-client').value,
+        userLevel: document.getElementById('user-level').value,
+        phone: document.getElementById('user-phone').value.trim(),
+        position: document.getElementById('user-position').value.trim(),
+        password: document.getElementById('user-password').value.trim()
     };
     
-    const hotels = [...AppState.get('hotels')];
+    // Obtener permisos
+    const permissions = ['hotels', 'tasks', 'employees', 'inventory', 'admin'];
+    const selectedPermissions = permissions.filter(perm => {
+        const checkbox = document.getElementById(`perm-${perm}`);
+        return checkbox && checkbox.checked;
+    });
     
-    // Verificar si el código ya existe (excepto para el hotel actual en caso de edición)
-    const codeExists = hotels.some(h => 
-        h.code.toLowerCase() === code.toLowerCase() && 
-        (!currentHotelId || h.id !== currentHotelId)
-    );
-    
-    if (codeExists) {
-        Utils.showToast('El código ya está en uso por otro hotel. Por favor usa uno diferente.', 'error');
-        document.getElementById('hotel-code').focus();
+    // Validaciones
+    if (!data.name || !data.email || !data.clientId || !data.userLevel || !data.password) {
+        alert('Por favor completa todos los campos obligatorios');
         return;
     }
     
-    if (currentHotelId) {
-        // Actualizar hotel existente
-        const index = hotels.findIndex(h => h.id === currentHotelId);
+    if (selectedPermissions.length === 0) {
+        alert('Selecciona al menos un permiso para el usuario');
+        return;
+    }
+    
+    try {
+        isLoading = true;
         
-        if (index !== -1) {
-            hotels[index] = {
-                ...hotels[index],
-                ...hotelData
-            };
-            
-            AppState.update('hotels', hotels);
-            Utils.showToast('Hotel actualizado correctamente', 'success');
-            
-            // Log de actualización
-            LicensingModule.logLicenseAction('hotel_updated', {
-                hotelId: currentHotelId,
-                hotelName: name,
-                hotelCode: code
-            });
-            
-            console.log(`✅ Hotel actualizado: ${name} (${code})`);
-        } else {
-            Utils.showToast('Error al actualizar el hotel', 'error');
-        }
-    } else {
-        // ⭐ VERIFICACIÓN FINAL DE LÍMITES ANTES DE CREAR
-        const validation = LicensingModule.canCreateHotel();
-        if (!validation.allowed) {
-            Utils.showToast(validation.message, 'error');
-            LicensingModule.showUpgradeModal('hotels');
-            return;
+        // Mostrar estado de carga
+        const createBtn = document.querySelector('button[onclick="createUserInFirebase()"]');
+        createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando usuario...';
+        createBtn.disabled = true;
+        
+        // Verificar que el cliente existe
+        const clients = AppState.get('clients') || [];
+        const client = clients.find(c => c.code === data.clientId);
+        if (!client) {
+            throw new Error('Cliente no encontrado');
         }
         
-        // Crear nuevo hotel
-        const maxId = hotels.reduce((max, hotel) => Math.max(max, hotel.id || 0), 0);
-        const currentUser = AppState.get('currentUser');
+        // Verificar límite de usuarios del cliente
+        const users = AppState.get('allUsers') || [];
+        const clientUsers = users.filter(u => u.clientId === data.clientId);
+        if (clientUsers.length >= client.limits.maxUsers) {
+            throw new Error(`El cliente ${client.name} ha alcanzado su límite de ${client.limits.maxUsers} usuarios`);
+        }
         
-        const newHotel = {
-            ...hotelData,
-            id: maxId + 1,
-            createdAt: new Date(),
-            createdBy: currentUser ? currentUser.email : 'admin',
-            settings: {
-                timezone: 'Europe/Madrid',
-                currency: 'EUR',
-                language: 'es'
+        // Crear usuario en Firebase Authentication
+        const userCredential = await firebase.auth().createUserWithEmailAndPassword(data.email, data.password);
+        const firebaseUser = userCredential.user;
+        
+        console.log('✅ Usuario creado en Firebase Auth:', firebaseUser.uid);
+        
+        // Crear perfil en Firestore
+        const userProfile = {
+            name: data.name,
+            email: data.email,
+            userLevel: data.userLevel,
+            clientId: data.clientId,
+            assignedHotels: ["ALL"], // Por defecto acceso a todos los hoteles del cliente
+            permissions: selectedPermissions,
+            active: true,
+            mustChangePassword: true,
+            createdAt: new Date().toISOString(),
+            createdBy: AppState.get('currentUser').email,
+            lastLogin: null,
+            profile: {
+                phone: data.phone,
+                position: data.position,
+                department: "General"
             }
         };
         
-        hotels.push(newHotel);
-        AppState.update('hotels', hotels);
-        Utils.showToast('Hotel creado correctamente', 'success');
+        await db.collection('users').doc(firebaseUser.uid).set(userProfile);
+        console.log('✅ Perfil guardado en Firestore');
         
-        // Log de creación
-        LicensingModule.logLicenseAction('hotel_created', {
-            hotelId: newHotel.id,
-            hotelName: name,
-            hotelCode: code,
-            totalHotels: hotels.filter(h => h.active).length
+        // Mostrar credenciales
+        alert(`🎉 Usuario "${data.name}" creado correctamente!
+
+📧 CREDENCIALES:
+Email: ${data.email}
+Contraseña: ${data.password}
+
+Cliente: ${client.name}
+Nivel: ${data.userLevel}
+Permisos: ${selectedPermissions.join(', ')}
+
+⚠️ IMPORTANTE:
+- Envía estas credenciales al usuario
+- Deberá cambiar la contraseña en el primer acceso
+- Usuario creado en Firebase Authentication y Firestore
+
+¡Usuario listo para usar Prestotel!`);
+        
+        // Recargar datos
+        hideCreateUserForm();
+        await loadAllFirebaseData(AppState.get('currentUser'));
+        
+        isLoading = false;
+        
+    } catch (error) {
+        console.error('❌ Error creando usuario:', error);
+        
+        let errorMessage = error.message;
+        if (error.code === 'auth/email-already-in-use') {
+            errorMessage = 'Este email ya está registrado en el sistema';
+        } else if (error.code === 'auth/weak-password') {
+            errorMessage = 'La contraseña es demasiado débil (mínimo 6 caracteres)';
+        } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'El formato del email no es válido';
+        }
+        
+        alert('Error creando usuario: ' + errorMessage);
+        
+        // Restaurar botón
+        const createBtn = document.querySelector('button[onclick="createUserInFirebase()"]');
+        if (createBtn) {
+            createBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Crear Usuario';
+            createBtn.disabled = false;
+        }
+        
+        isLoading = false;
+    }
+}
+
+async function viewUserDetails(uid) {
+    try {
+        const users = AppState.get('allUsers') || [];
+        const user = users.find(u => u.uid === uid);
+        
+        if (user) {
+            const clients = AppState.get('clients') || [];
+            const client = clients.find(c => c.code === user.clientId);
+            
+            alert(`👤 Detalles del Usuario:
+
+Nombre: ${user.name}
+Email: ${user.email}
+Nivel: ${user.userLevel}
+Estado: ${user.active ? 'Activo' : 'Inactivo'}
+
+Cliente: ${client ? client.name : 'Sistema'}
+Código Cliente: ${user.clientId || 'N/A'}
+
+Permisos: ${(user.permissions || []).join(', ')}
+Hoteles Asignados: ${(user.assignedHotels || []).join(', ')}
+
+Perfil:
+- Teléfono: ${user.profile?.phone || 'No especificado'}
+- Cargo: ${user.profile?.position || 'No especificado'}
+- Departamento: ${user.profile?.department || 'No especificado'}
+
+Contraseña: ${user.mustChangePassword ? 'Debe cambiar' : 'Configurada'}
+Último acceso: ${user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Nunca'}
+
+Creado: ${new Date(user.createdAt).toLocaleString()}
+Por: ${user.createdBy}
+ID Firebase: ${uid}`);
+        }
+    } catch (error) {
+        console.error('❌ Error obteniendo detalles del usuario:', error);
+        alert('Error obteniendo detalles: ' + error.message);
+    }
+}
+
+async function toggleUserStatus(uid, newStatus) {
+    try {
+        await db.collection('users').doc(uid).update({
+            active: newStatus,
+            updatedAt: new Date().toISOString()
         });
         
-        console.log(`✅ Hotel creado: ${name} (${code})`);
-    }
-    
-    // Cerrar formulario y actualizar vista
-    hideHotelForm();
-    
-    // Actualizar selectores de hotel en toda la aplicación
-    if (typeof updateAllHotelSelectors === 'function') {
-        updateAllHotelSelectors();
-    }
-    
-    // Actualizar selector de contexto
-    if (typeof HotelContextModule !== 'undefined') {
-        HotelContextModule.updateHotelSelectorOptions();
-    }
-    
-    // Recargar pestaña de hoteles
-    const hotelsTab = document.getElementById('hotels-tab');
-    if (hotelsTab) {
-        hotelsTab.innerHTML = renderHotelsTab();
-        setupHotelEvents();
+        console.log(`✅ Usuario ${newStatus ? 'activado' : 'suspendido'}:`, uid);
+        
+        // Recargar datos
+        await loadAllFirebaseData(AppState.get('currentUser'));
+        
+    } catch (error) {
+        console.error('❌ Error cambiando estado del usuario:', error);
+        alert('Error cambiando estado: ' + error.message);
     }
 }
 
-function deleteHotel(hotelId) {
-    const hotels = AppState.get('hotels');
-    const hotel = hotels.find(h => h.id === hotelId);
+function viewClientUsers(clientCode) {
+    // Cambiar a pestaña de usuarios y filtrar por cliente
+    switchTab('users');
     
-    if (!hotel) {
-        Utils.showToast('Hotel no encontrado', 'error');
-        return;
+    // Aquí podrías implementar un filtro visual
+    setTimeout(() => {
+        alert(`🔍 Mostrando usuarios del cliente: ${clientCode}\n\nEsta funcionalidad se puede expandir para filtrar la tabla.`);
+    }, 100);
+}
+
+// ====================================================
+// FORMULARIOS DE CLIENTES (Reutilizados)
+// ====================================================
+
+function renderCreateClientForm() {
+    return `
+        <div style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 1.25rem 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-plus"></i> Crear Nuevo Cliente
+            </h4>
+            <button onclick="hideCreateClientForm()" style="background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div style="padding: 2rem; background: white;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Nombre de la Empresa *</label>
+                    <input type="text" id="client-name" placeholder="ej: Hotel Mediterráneo S.L." 
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #e9ecef; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Código Cliente *</label>
+                    <input type="text" id="client-code" placeholder="ej: MEDITERR_2025"
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #e9ecef; border-radius: 8px;">
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Email de Contacto *</label>
+                    <input type="email" id="client-email" placeholder="ej: admin@mediteraneo.com"
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #e9ecef; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Plan de Servicio *</label>
+                    <select id="client-plan" style="width: 100%; padding: 0.75rem; border: 2px solid #e9ecef; border-radius: 8px;">
+                        <option value="">Seleccionar plan...</option>
+                        <option value="basic">Básico - 3 hoteles (€99/mes)</option>
+                        <option value="professional">Profesional - 10 hoteles (€299/mes)</option>
+                        <option value="enterprise">Enterprise - 25 hoteles (€699/mes)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button onclick="hideCreateClientForm()" style="padding: 0.75rem 1.5rem; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    Cancelar
+                </button>
+                <button onclick="createClientInFirebase()" style="padding: 0.75rem 1.5rem; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-cloud-upload-alt"></i> Crear Cliente
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function showCreateClientForm() {
+    const form = document.getElementById('create-client-form');
+    if (form) {
+        form.style.display = 'block';
+        document.getElementById('client-name').focus();
     }
-    
-    // Confirmación de eliminación
-    if (!confirm(`¿Estás seguro de que quieres eliminar el hotel "${hotel.name}"?\n\nEsta acción no se puede deshacer y eliminará todos los datos asociados al hotel.`)) {
-        return;
+}
+
+function hideCreateClientForm() {
+    const form = document.getElementById('create-client-form');
+    if (form) {
+        form.style.display = 'none';
     }
-    
-    // Eliminar hotel
-    const updatedHotels = hotels.filter(h => h.id !== hotelId);
-    AppState.update('hotels', updatedHotels);
-    
-    // TODO: Eliminar datos relacionados (tareas, empleados, etc.)
-    // cleanupHotelData(hotelId);
-    
-    Utils.showToast(`Hotel "${hotel.name}" eliminado correctamente`, 'success');
-    
-    // Log de eliminación
-    LicensingModule.logLicenseAction('hotel_deleted', {
-        hotelId: hotelId,
-        hotelName: hotel.name,
-        hotelCode: hotel.code,
-        totalHotels: updatedHotels.filter(h => h.active).length
+    clearClientForm();
+}
+
+function clearClientForm() {
+    const fields = ['client-name', 'client-code', 'client-email', 'client-plan'];
+    fields.forEach(id => {
+        const field = document.getElementById(id);
+        if (field) field.value = '';
     });
-    
-    // Actualizar selectores y recargar vista
-    if (typeof updateAllHotelSelectors === 'function') {
-        updateAllHotelSelectors();
-    }
-    
-    if (typeof HotelContextModule !== 'undefined') {
-        HotelContextModule.updateHotelSelectorOptions();
-    }
-    
-    // Recargar pestaña de hoteles
-    const hotelsTab = document.getElementById('hotels-tab');
-    if (hotelsTab) {
-        hotelsTab.innerHTML = renderHotelsTab();
-        setupHotelEvents();
-    }
-    
-    console.log(`🗑️ Hotel eliminado: ${hotel.name} (${hotel.code})`);
 }
 
-function hideHotelForm() {
-    const hotelForm = document.getElementById('hotel-form');
-    if (hotelForm) {
-        hotelForm.classList.add('hidden');
+function generatePassword() {
+    // Función para compatibilidad - ya no se usa en el nuevo formulario simplificado
+    console.log('generatePassword: función heredada');
+}
+
+// Funciones de clientes que ya teníamos
+async function createClientInFirebase() {
+    // Función simplificada del cliente - reutilizar la lógica anterior
+    // pero sin el formulario extendido
+    
+    const data = {
+        name: document.getElementById('client-name').value.trim(),
+        code: document.getElementById('client-code').value.trim().toUpperCase(),
+        email: document.getElementById('client-email').value.trim(),
+        plan: document.getElementById('client-plan').value
+    };
+    
+    if (!data.name || !data.code || !data.email || !data.plan) {
+        alert('Por favor completa todos los campos obligatorios');
+        return;
     }
-    currentHotelId = null;
+    
+    try {
+        isLoading = true;
+        
+        const createBtn = document.querySelector('button[onclick="createClientInFirebase()"]');
+        createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+        createBtn.disabled = true;
+        
+        // Verificar código único
+        const existingClient = await db.collection('clients').where('code', '==', data.code).get();
+        if (!existingClient.empty) {
+            throw new Error('El código de cliente ya existe');
+        }
+        
+        // Crear cliente básico
+        const planLimits = {
+            basic: { maxHotels: 3, maxUsers: 10, price: 99 },
+            professional: { maxHotels: 10, maxUsers: 50, price: 299 },
+            enterprise: { maxHotels: 25, maxUsers: 100, price: 699 }
+        };
+        
+        const limits = planLimits[data.plan];
+        const client = {
+            id: data.code,
+            name: data.name,
+            code: data.code,
+            email: data.email,
+            plan: data.plan,
+            status: 'active',
+            limits: {
+                maxHotels: limits.maxHotels,
+                maxUsers: limits.maxUsers,
+                maxStorageGB: 10,
+                maxTasksPerMonth: 10000
+            },
+            monthlyPrice: limits.price,
+            startDate: new Date().toISOString(),
+            expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 año
+            createdAt: new Date().toISOString(),
+            createdBy: AppState.get('currentUser').email,
+            stats: {
+                hotelsCount: 0,
+                usersCount: 0,
+                storageUsedGB: 0,
+                tasksThisMonth: 0
+            }
+        };
+        
+        // Guardar en Firestore
+        await db.collection('clients').add(client);
+        console.log('✅ Cliente creado en Firebase');
+        
+        alert(`🎉 Cliente "${client.name}" creado correctamente!
+
+Plan: ${client.plan.toUpperCase()} (€${client.monthlyPrice}/mes)
+Límites: ${client.limits.maxHotels} hoteles, ${client.limits.maxUsers} usuarios
+
+Ahora puedes crear usuarios para este cliente en la pestaña "Usuarios".`);
+        
+        // Recargar datos
+        hideCreateClientForm();
+        await loadAllFirebaseData(AppState.get('currentUser'));
+        
+        isLoading = false;
+        
+    } catch (error) {
+        console.error('❌ Error creando cliente:', error);
+        alert('Error creando cliente: ' + error.message);
+        
+        const createBtn = document.querySelector('button[onclick="createClientInFirebase()"]');
+        if (createBtn) {
+            createBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Crear Cliente';
+            createBtn.disabled = false;
+        }
+        
+        isLoading = false;
+    }
+}
+
+async function viewClientFromFirebase(firestoreId) {
+    try {
+        const doc = await db.collection('clients').doc(firestoreId).get();
+        
+        if (doc.exists) {
+            const client = doc.data();
+            const users = AppState.get('allUsers') || [];
+            const clientUsers = users.filter(u => u.clientId === client.code);
+            
+            alert(`📋 Detalles del Cliente:
+
+Nombre: ${client.name}
+Código: ${client.code}
+Email: ${client.email}
+Plan: ${client.plan.toUpperCase()}
+Estado: ${client.status}
+Precio mensual: €${client.monthlyPrice}
+
+Límites:
+- Hoteles: ${client.stats.hotelsCount}/${client.limits.maxHotels}
+- Usuarios: ${clientUsers.length}/${client.limits.maxUsers}
+- Almacenamiento: ${client.stats.storageUsedGB}/${client.limits.maxStorageGB} GB
+
+Usuarios registrados: ${clientUsers.length}
+Usuarios activos: ${clientUsers.filter(u => u.active).length}
+
+Vencimiento: ${new Date(client.expiryDate).toLocaleDateString()}
+Creado: ${new Date(client.createdAt).toLocaleDateString()}
+ID Firebase: ${firestoreId}`);
+        }
+    } catch (error) {
+        console.error('❌ Error obteniendo cliente:', error);
+        alert('Error obteniendo detalles: ' + error.message);
+    }
 }
 
 // ====================================================
 // CONFIGURACIÓN DE EVENTOS
 // ====================================================
 
-function setupAdminEvents() {
-    // Eventos de navegación entre pestañas
-    setupTabNavigation();
-    
-    // Eventos específicos de hoteles
-    setupHotelEvents();
-    
-    console.log('🎛️ Eventos de administración configurados');
-}
-
-function setupTabNavigation() {
-    const tabLinks = document.querySelectorAll('.nav-link[data-tab]');
-    
-    tabLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            
-            const tabId = link.getAttribute('data-tab');
-            
-            // Actualizar navegación activa
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
-            
-            // Mostrar contenido de pestaña
-            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
-            const targetPane = document.getElementById(tabId);
-            if (targetPane) {
-                targetPane.classList.add('active');
-            }
-            
-            console.log(`📑 Pestaña cambiada a: ${tabId}`);
-        });
-    });
-}
-
-function setupHotelEvents() {
-    // Botón nuevo hotel
-    const btnNewHotel = document.getElementById('btn-new-hotel');
-    if (btnNewHotel) {
-        btnNewHotel.addEventListener('click', showHotelForm);
-    }
-    
-    // Botón cancelar hotel
-    const btnCancelHotel = document.getElementById('cancel-hotel-btn');
-    if (btnCancelHotel) {
-        btnCancelHotel.addEventListener('click', hideHotelForm);
-    }
-    
-    // Botón guardar hotel
-    const btnSaveHotel = document.getElementById('save-hotel-btn');
-    if (btnSaveHotel) {
-        btnSaveHotel.addEventListener('click', saveHotel);
-    }
-    
-    // Validación en tiempo real del código del hotel
-    const hotelCodeInput = document.getElementById('hotel-code');
-    if (hotelCodeInput) {
-        hotelCodeInput.addEventListener('input', (e) => {
-            // Convertir a mayúsculas y eliminar espacios
-            let value = e.target.value.toUpperCase().replace(/\s/g, '');
-            
-            // Limitar a caracteres alfanuméricos
-            value = value.replace(/[^A-Z0-9]/g, '');
-            
-            // Limitar longitud
-            if (value.length > 10) {
-                value = value.substring(0, 10);
-            }
-            
-            e.target.value = value;
-            
-            // Validar unicidad si hay valor
-            if (value.length >= 3) {
-                validateHotelCodeUniqueness(value);
-            }
-        });
-    }
-    
-    // Eventos de otros botones
-    const btnNewPoolType = document.getElementById('btn-new-pool-type');
-    if (btnNewPoolType) {
-        btnNewPoolType.addEventListener('click', () => {
-            Utils.showToast('Funcionalidad en desarrollo', 'info');
-        });
-    }
-    
-    const btnNewUser = document.getElementById('btn-new-user');
-    if (btnNewUser) {
-        btnNewUser.addEventListener('click', () => {
-            Utils.showToast('Funcionalidad en desarrollo', 'info');
-        });
-    }
+function setupAllEvents() {
+    // Los eventos ya están configurados inline en el HTML
+    console.log('✅ Eventos configurados para gestión completa');
 }
 
 // ====================================================
-// FUNCIONES DE VALIDACIÓN
+// COMPATIBILIDAD Y EXPORTACIÓN
 // ====================================================
 
-function validateHotelCodeUniqueness(code) {
-    const hotels = AppState.get('hotels');
-    const exists = hotels.some(h => 
-        h.code.toLowerCase() === code.toLowerCase() && 
-        (!currentHotelId || h.id !== currentHotelId)
-    );
-    
-    const codeInput = document.getElementById('hotel-code');
-    const saveBtn = document.getElementById('save-hotel-btn');
-    
-    if (exists) {
-        codeInput.classList.add('is-invalid');
-        if (saveBtn) saveBtn.disabled = true;
-        
-        // Mostrar mensaje de error
-        let errorMsg = document.getElementById('code-error-msg');
-        if (!errorMsg) {
-            errorMsg = document.createElement('div');
-            errorMsg.id = 'code-error-msg';
-            errorMsg.className = 'invalid-feedback';
-            codeInput.parentNode.appendChild(errorMsg);
-        }
-        errorMsg.textContent = 'Este código ya está en uso';
-    } else {
-        codeInput.classList.remove('is-invalid');
-        if (saveBtn) saveBtn.disabled = false;
-        
-        // Eliminar mensaje de error
-        const errorMsg = document.getElementById('code-error-msg');
-        if (errorMsg) {
-            errorMsg.remove();
-        }
-    }
-}
-
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-}
-
-// ====================================================
-// FUNCIONES DE UTILIDAD
-// ====================================================
-
-function getModuleDisplayName(moduleCode) {
-    const moduleNames = {
-        'tasks': 'Gestión de Tareas',
-        'inventory': 'Inventario',
-        'orders': 'Pedidos',
-        'chemicals': 'Productos Químicos',
-        'employees': 'Personal',
-        'shifts': 'Turnos',
-        'pools': 'Piscinas',
-        'winter': 'Tareas de Invierno',
-        'admin': 'Administración'
+// Asegurar compatibilidad con sistema existente
+if (typeof AdminModule === 'undefined') {
+    window.AdminModule = {
+        init: initAdminModule,
+        refresh: refreshAllData
     };
-    
-    return moduleNames[moduleCode] || moduleCode;
 }
 
-function loadConfigurationData() {
-    console.log('📊 Cargando datos de configuración...');
-    
-    // Cargar hoteles si no existen (datos mock)
-    if (AppState.get('hotels').length === 0) {
-        console.log('🏨 Cargando hoteles de ejemplo...');
-        const mockHotels = [
-            {
-                id: 1,
-                name: "Meliá Palma Bay",
-                code: "MELIA_PALMA",
-                location: "Mallorca, España",
-                address: "Paseo Marítimo 11, 07014 Palma",
-                phone: "+34 971 268 500",
-                email: "palmabay@melia.com",
-                active: true,
-                createdBy: "admin@melia.com",
-                createdAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),
-                settings: {
-                    timezone: "Europe/Madrid",
-                    currency: "EUR",
-                    language: "es"
-                }
-            },
-            {
-                id: 2,
-                name: "Meliá Costa del Sol",
-                code: "MELIA_COSTA",
-                location: "Torremolinos, España",
-                address: "Av. Carlota Alessandri 109, 29620 Torremolinos",
-                phone: "+34 952 386 677",
-                email: "costadelsol@melia.com",
-                active: true,
-                createdBy: "admin@melia.com",
-                createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000),
-                settings: {
-                    timezone: "Europe/Madrid",
-                    currency: "EUR",
-                    language: "es"
-                }
-            }
-        ];
-        
-        AppState.update('hotels', mockHotels);
-    }
-    
-    console.log('✅ Datos de configuración cargados');
-}
+// Hacer funciones globales para eventos inline
+window.switchTab = switchTab;
+window.refreshAllData = refreshAllData;
 
-// ====================================================
-// FUNCIONES GLOBALES (Expuestas al window)
-// ====================================================
+// Funciones de clientes
+window.showCreateClientForm = showCreateClientForm;
+window.hideCreateClientForm = hideCreateClientForm;
+window.createClientInFirebase = createClientInFirebase;
+window.viewClientFromFirebase = viewClientFromFirebase;
+window.viewClientUsers = viewClientUsers;
 
-// Hacer funciones disponibles globalmente para eventos onclick
-if (typeof window !== 'undefined') {
-    window.editHotel = editHotel;
-    window.deleteHotel = deleteHotel;
-    window.showHotelForm = showHotelForm;
-    window.hideHotelForm = hideHotelForm;
-    window.saveHotel = saveHotel;
-}
+// Funciones de usuarios
+window.showCreateUserForm = showCreateUserForm;
+window.hideCreateUserForm = hideCreateUserForm;
+window.generateUserPassword = generateUserPassword;
+window.createUserInFirebase = createUserInFirebase;
+window.viewUserDetails = viewUserDetails;
+window.toggleUserStatus = toggleUserStatus;
 
-// ====================================================
-// INICIALIZACIÓN AUTOMÁTICA
-// ====================================================
+// Función heredada para compatibilidad
+window.generatePassword = generatePassword;
 
-// Inicializar cuando se carga el DOM
-if (typeof document !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', () => {
-        // Verificar si estamos en la vista de administración
-        const adminView = document.getElementById('admin-view');
-        if (adminView && !adminView.classList.contains('hidden')) {
-            initAdminModule();
-        }
-    });
-}
-
-// Escuchar cambios de módulo para inicializar cuando se navega a admin
-if (typeof AppState !== 'undefined') {
-    AppState.subscribe('currentModule', (moduleId) => {
-        if (moduleId === 'admin-view') {
-            // Pequeño delay para asegurar que la vista esté lista
-            setTimeout(() => {
-                initAdminModule();
-            }, 100);
-        }
-    });
-}
-
-// ====================================================
-// EXPORTACIÓN DEL MÓDULO
-// ====================================================
-
-// Objeto principal del módulo para exportación
-const AdminModule = {
-    init: initAdminModule,
-    checkAccess: checkAdminAccess,
-    showHotelForm: showHotelForm,
-    editHotel: editHotel,
-    deleteHotel: deleteHotel,
-    saveHotel: saveHotel,
-    hideHotelForm: hideHotelForm
-};
-
-// Exportar para uso global
-if (typeof window !== 'undefined') {
-    window.AdminModule = AdminModule;
-}
-
-console.log('📋 Módulo de administración cargado');
+console.log('🔥 Super Admin con gestión completa de usuarios cargado correctamente');

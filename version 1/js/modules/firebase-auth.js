@@ -1,5 +1,5 @@
 // ====================================================
-// MÓDULO DE AUTENTICACIÓN FIREBASE PARA PRESTOTEL
+// MÓDULO DE AUTENTICACIÓN FIREBASE MULTI-CLIENTE
 // ====================================================
 
 const FirebaseAuthModule = {
@@ -18,7 +18,7 @@ const FirebaseAuthModule = {
       return;
     }
     
-    console.log('🔐 Inicializando Firebase Authentication...');
+    console.log('🔐 Inicializando Firebase Authentication Multi-Cliente...');
     
     try {
       // Verificar que Firebase esté disponible
@@ -33,7 +33,7 @@ const FirebaseAuthModule = {
       );
       
       this.isInitialized = true;
-      console.log('✅ Firebase Auth inicializado correctamente');
+      console.log('✅ Firebase Auth Multi-Cliente inicializado correctamente');
       
     } catch (error) {
       console.error('❌ Error al inicializar Firebase Auth:', error);
@@ -76,20 +76,19 @@ const FirebaseAuthModule = {
         return;
       }
       
-      // Establecer usuario en el sistema global
-      window.setCurrentUser(firebaseUser, userProfile);
+      console.log(`👤 Tipo de usuario detectado: ${userProfile.userLevel}`);
+      
+      // ⭐ DETECTAR TIPO DE USUARIO Y CARGAR CONTEXTO
+      await this.setupUserContext(firebaseUser, userProfile);
       
       // Actualizar último login
       await this.updateLastLogin(firebaseUser.uid);
       
-      // Cargar datos del cliente si corresponde
-      await this.loadClientData(userProfile.clientId);
-      
       // Configurar AppState con el usuario
       this.updateAppState(firebaseUser, userProfile);
       
-      // Inicializar aplicación
-      this.initializeMainApp();
+      // Inicializar aplicación según tipo de usuario
+      this.initializeMainApp(userProfile);
       
       console.log(`🎉 Login completado para: ${userProfile.name} (${userProfile.userLevel})`);
       
@@ -99,19 +98,199 @@ const FirebaseAuthModule = {
     }
   },
   
+  // ⭐ NUEVA: CONFIGURAR CONTEXTO SEGÚN TIPO DE USUARIO
+  async setupUserContext(firebaseUser, userProfile) {
+    console.log(`🎯 Configurando contexto para: ${userProfile.userLevel}`);
+    
+    switch (userProfile.userLevel) {
+      case 'super_admin':
+        await this.setupSuperAdminContext();
+        break;
+        
+      case 'client_admin':
+        await this.setupClientAdminContext(userProfile);
+        break;
+        
+      case 'hotel_manager':
+        await this.setupHotelManagerContext(userProfile);
+        break;
+        
+      case 'department_head':
+      case 'employee':
+        await this.setupEmployeeContext(userProfile);
+        break;
+        
+      default:
+        console.warn(`⚠️ Tipo de usuario desconocido: ${userProfile.userLevel}`);
+        await this.setupEmployeeContext(userProfile);
+    }
+  },
+  
+  // ⭐ CONTEXTO SUPER ADMIN
+  async setupSuperAdminContext() {
+    console.log('👑 Configurando contexto Super Admin...');
+    
+    // Super Admin ve TODO
+    AppState.update('userContext', {
+      type: 'super_admin',
+      canViewAllClients: true,
+      canManageSystem: true,
+      allowedModules: ['all'],
+      dataScope: 'global'
+    });
+    
+    // Cargar todos los clientes para estadísticas
+    try {
+      const clientsSnapshot = await db.collection('clients').get();
+      const clients = [];
+      clientsSnapshot.forEach(doc => {
+        clients.push({ firestoreId: doc.id, ...doc.data() });
+      });
+      AppState.update('clients', clients);
+      
+      console.log(`✅ Super Admin: ${clients.length} clientes cargados`);
+    } catch (error) {
+      console.warn('⚠️ Error cargando clientes para Super Admin:', error);
+    }
+  },
+  
+  // ⭐ CONTEXTO CLIENT ADMIN
+  async setupClientAdminContext(userProfile) {
+    console.log(`🏢 Configurando contexto Client Admin para: ${userProfile.clientId}`);
+    
+    if (!userProfile.clientId) {
+      throw new Error('Client Admin sin clientId asignado');
+    }
+    
+    try {
+      // Cargar datos del cliente
+      const clientDoc = await db.collection('clients').where('code', '==', userProfile.clientId).get();
+      
+      if (clientDoc.empty) {
+        throw new Error(`Cliente no encontrado: ${userProfile.clientId}`);
+      }
+      
+      const clientData = clientDoc.docs[0].data();
+      const clientFirestoreId = clientDoc.docs[0].id;
+      
+      console.log(`✅ Cliente cargado: ${clientData.name}`);
+      
+      // Establecer contexto del cliente
+      AppState.update('userContext', {
+        type: 'client_admin',
+        clientId: userProfile.clientId,
+        clientName: clientData.name,
+        canManageClient: true,
+        allowedModules: userProfile.permissions || [],
+        dataScope: 'client',
+        limits: clientData.limits
+      });
+      
+      // Cargar datos específicos del cliente
+      await this.loadClientSpecificData(userProfile.clientId);
+      
+      // Actualizar licencia en AppState
+      AppState.update('clientLicense', {
+        clientId: userProfile.clientId,
+        clientName: clientData.name,
+        plan: clientData.plan,
+        status: clientData.status,
+        limits: clientData.limits,
+        startDate: clientData.startDate,
+        expiryDate: clientData.expiryDate
+      });
+      
+    } catch (error) {
+      console.error('❌ Error configurando contexto Client Admin:', error);
+      throw error;
+    }
+  },
+  
+  // ⭐ CONTEXTO HOTEL MANAGER
+  async setupHotelManagerContext(userProfile) {
+    console.log(`🏨 Configurando contexto Hotel Manager para: ${userProfile.assignedHotels}`);
+    
+    AppState.update('userContext', {
+      type: 'hotel_manager',
+      clientId: userProfile.clientId,
+      assignedHotels: userProfile.assignedHotels || ['ALL'],
+      canManageHotel: true,
+      allowedModules: userProfile.permissions || ['tasks', 'employees', 'inventory'],
+      dataScope: 'hotel'
+    });
+    
+    // Cargar datos del cliente y hoteles asignados
+    if (userProfile.clientId) {
+      await this.loadClientSpecificData(userProfile.clientId);
+    }
+  },
+  
+  // ⭐ CONTEXTO EMPLOYEE
+  async setupEmployeeContext(userProfile) {
+    console.log(`👥 Configurando contexto Employee para: ${userProfile.userLevel}`);
+    
+    AppState.update('userContext', {
+      type: 'employee',
+      clientId: userProfile.clientId,
+      assignedHotels: userProfile.assignedHotels || [],
+      canManageHotel: false,
+      allowedModules: userProfile.permissions || ['tasks'],
+      dataScope: 'limited'
+    });
+    
+    // Cargar datos básicos del cliente
+    if (userProfile.clientId) {
+      await this.loadClientSpecificData(userProfile.clientId);
+    }
+  },
+  
+  // ⭐ CARGAR DATOS ESPECÍFICOS DEL CLIENTE
+  async loadClientSpecificData(clientId) {
+    if (!clientId) return;
+    
+    try {
+      console.log(`📊 Cargando datos específicos del cliente: ${clientId}`);
+      
+      // Cargar usuarios del cliente
+      const usersSnapshot = await db.collection('users').where('clientId', '==', clientId).get();
+      const clientUsers = [];
+      usersSnapshot.forEach(doc => {
+        clientUsers.push({ uid: doc.id, ...doc.data() });
+      });
+      
+      AppState.update('clientUsers', clientUsers);
+      console.log(`✅ ${clientUsers.length} usuarios del cliente cargados`);
+      
+      // Aquí se pueden cargar más datos específicos:
+      // - Hoteles del cliente
+      // - Tareas del cliente
+      // - Empleados del cliente
+      // - etc.
+      
+    } catch (error) {
+      console.error('❌ Error cargando datos del cliente:', error);
+    }
+  },
+  
   handleUserSignOut() {
     // Limpiar estado global
-    window.clearCurrentUser();
+    if (typeof window.clearCurrentUser === 'function') {
+      window.clearCurrentUser();
+    }
     
-    // Limpiar AppState
+    // Limpiar AppState completamente
     AppState.update('currentUser', null);
     AppState.update('isAuthenticated', false);
     AppState.update('clientLicense', null);
+    AppState.update('userContext', null);
+    AppState.update('clients', []);
+    AppState.update('clientUsers', []);
+    AppState.update('allUsers', []);
     
     // Mostrar pantalla de login
     this.showLoginScreen();
     
-    console.log('🚪 Usuario desconectado');
+    console.log('🚪 Usuario desconectado - Estado limpiado');
   },
   
   handleAuthError(error) {
@@ -185,7 +364,7 @@ const FirebaseAuthModule = {
     try {
       console.log(`📄 Obteniendo perfil de usuario: ${uid}`);
       
-      const doc = await systemCollections.users.doc(uid).get();
+      const doc = await db.collection('users').doc(uid).get();
       
       if (doc.exists) {
         const profile = doc.data();
@@ -204,7 +383,7 @@ const FirebaseAuthModule = {
   
   async updateLastLogin(uid) {
     try {
-      await systemCollections.users.doc(uid).update({
+      await db.collection('users').doc(uid).update({
         lastLogin: firebase.firestore.FieldValue.serverTimestamp()
       });
       
@@ -215,69 +394,40 @@ const FirebaseAuthModule = {
     }
   },
   
-  async loadClientData(clientId) {
-    if (!clientId) {
-      console.log('👑 Super admin - no cargar datos de cliente específico');
-      return;
-    }
-    
-    try {
-      console.log(`🏢 Cargando datos del cliente: ${clientId}`);
-      
-      const clientDoc = await systemCollections.clients.doc(clientId).get();
-      
-      if (clientDoc.exists) {
-        const clientData = clientDoc.data();
-        
-        // Actualizar licencia en AppState
-        AppState.update('clientLicense', {
-          clientId: clientId,
-          clientName: clientData.name,
-          plan: clientData.plan,
-          status: clientData.status,
-          limits: clientData.limits,
-          enabledModules: clientData.enabledModules,
-          startDate: clientData.startDate,
-          expiryDate: clientData.expiryDate,
-          lastPayment: clientData.lastPayment,
-          nextBilling: clientData.nextBilling
-        });
-        
-        console.log(`✅ Datos del cliente cargados: ${clientData.name}`);
-        
-      } else {
-        console.warn(`⚠️ Datos del cliente no encontrados: ${clientId}`);
-      }
-      
-    } catch (error) {
-      console.error('❌ Error al cargar datos del cliente:', error);
-    }
-  },
-  
+  // ⭐ MEJORADA: ACTUALIZAR APPSTATE CON CONTEXTO
   updateAppState(firebaseUser, userProfile) {
     console.log('📊 Actualizando AppState con datos del usuario...');
     
-    // Actualizar usuario en AppState
+    // Actualizar usuario en AppState con toda la información
     AppState.update('currentUser', {
+      uid: firebaseUser.uid,
       id: firebaseUser.uid,
       email: firebaseUser.email,
       name: userProfile.name,
       userLevel: userProfile.userLevel,
-      assignedHotels: userProfile.assignedHotels || ['ALL'],
-      currentHotelContext: userProfile.currentHotelContext || 'ALL',
-      permissions: userProfile.permissions || {},
       clientId: userProfile.clientId,
+      assignedHotels: userProfile.assignedHotels || ['ALL'],
+      currentHotelContext: userProfile.assignedHotels?.[0] || 'ALL',
+      permissions: userProfile.permissions || [],
+      active: userProfile.active,
+      mustChangePassword: userProfile.mustChangePassword || false,
+      profile: userProfile.profile || {},
       lastLogin: new Date(),
-      createdAt: userProfile.createdAt ? userProfile.createdAt.toDate() : new Date()
+      createdAt: userProfile.createdAt || new Date()
     });
     
     AppState.update('isAuthenticated', true);
     
-    console.log('✅ AppState actualizado');
+    // Establecer usuario global si la función existe
+    if (typeof window.setCurrentUser === 'function') {
+      window.setCurrentUser(firebaseUser, userProfile);
+    }
+    
+    console.log('✅ AppState actualizado con contexto multi-cliente');
   },
   
   // ====================================================
-  // INTERFAZ DE USUARIO
+  // INTERFAZ DE USUARIO MEJORADA
   // ====================================================
   
   showLoginScreen() {
@@ -289,7 +439,7 @@ const FirebaseAuthModule = {
               <i class="fas fa-hotel"></i>
             </div>
             <h1>PRESTOTEL</h1>
-            <p>Sistema de Gestión Hotelera</p>
+            <p>Sistema de Gestión Hotelera Multi-Cliente</p>
           </div>
           
           <form id="login-form" class="login-form">
@@ -325,11 +475,45 @@ const FirebaseAuthModule = {
           <div id="login-success" class="login-success hidden"></div>
           
           <div class="login-footer">
+            <div class="user-types">
+              <small>Tipos de usuario soportados:</small>
+              <div class="user-badges">
+                <span class="badge badge-super">Super Admin</span>
+                <span class="badge badge-client">Client Admin</span>
+                <span class="badge badge-hotel">Hotel Manager</span>
+                <span class="badge badge-employee">Employee</span>
+              </div>
+            </div>
             <p>¿Necesitas acceso? <a href="mailto:ventas@prestotel.com">Contacta con Prestotel</a></p>
-            <p class="version">v${appConfig.appVersion}</p>
+            <p class="version">v${typeof appConfig !== 'undefined' ? appConfig.appVersion : '2.0.0'}</p>
           </div>
         </div>
       </div>
+      
+      <style>
+        .user-types {
+          text-align: center;
+          margin-bottom: 1rem;
+        }
+        .user-badges {
+          display: flex;
+          justify-content: center;
+          gap: 0.5rem;
+          margin-top: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .badge {
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+        }
+        .badge-super { background: #6f42c1; color: white; }
+        .badge-client { background: #007bff; color: white; }
+        .badge-hotel { background: #28a745; color: white; }
+        .badge-employee { background: #6c757d; color: white; }
+      </style>
     `;
     
     this.setupLoginEvents();
@@ -385,7 +569,7 @@ const FirebaseAuthModule = {
     
     if (result.success) {
       // El éxito se maneja en handleAuthStateChange
-      successDiv.textContent = 'Iniciando sesión...';
+      successDiv.textContent = 'Configurando tu entorno de trabajo...';
       successDiv.classList.remove('hidden');
     } else {
       // Mostrar error
@@ -423,44 +607,73 @@ const FirebaseAuthModule = {
     }
   },
   
-  initializeMainApp() {
-  console.log('🚀 Inicializando aplicación principal...');
-  
-  // ⭐ VERIFICAR SI YA SE RECARGÓ PARA EVITAR BUCLE
-  const hasReloaded = sessionStorage.getItem('appReloaded');
-  
-  if (!hasReloaded) {
-    console.log('📱 Primera vez - Recargando página...');
+  // ⭐ MEJORADA: INICIALIZACIÓN SEGÚN TIPO DE USUARIO
+  initializeMainApp(userProfile) {
+    console.log(`🚀 Inicializando aplicación para: ${userProfile.userLevel}...`);
     
-    // Marcar que ya se recargó
-    sessionStorage.setItem('appReloaded', 'true');
+    // ⭐ VERIFICAR SI YA SE RECARGÓ PARA EVITAR BUCLE
+    const hasReloaded = sessionStorage.getItem('appReloaded');
     
-    // Recargar página
+    if (!hasReloaded) {
+      console.log('📱 Primera vez - Recargando página...');
+      
+      // Marcar que ya se recargó
+      sessionStorage.setItem('appReloaded', 'true');
+      
+      // Recargar página
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+      
+    } else {
+      console.log('✅ Ya se recargó - Mostrando aplicación directamente...');
+      
+      // Limpiar flag
+      sessionStorage.removeItem('appReloaded');
+      
+      // Mostrar aplicación sin recargar
+      const loginScreen = document.getElementById('loginScreen');
+      const appScreen = document.getElementById('app');
+      
+      if (loginScreen && appScreen) {
+        loginScreen.style.display = 'none';
+        appScreen.style.display = 'block';
+      }
+      
+      // Inicializar app según tipo de usuario
+      if (typeof initializeAuthenticatedApp === 'function') {
+        initializeAuthenticatedApp();
+      }
+      
+      // Mostrar mensaje de bienvenida específico
+      this.showWelcomeMessage(userProfile);
+    }
+  },
+  
+  // ⭐ NUEVA: MENSAJE DE BIENVENIDA PERSONALIZADO
+  showWelcomeMessage(userProfile) {
+    const context = AppState.get('userContext');
+    let welcomeMessage = `¡Bienvenido ${userProfile.name}!`;
+    
+    switch (userProfile.userLevel) {
+      case 'super_admin':
+        welcomeMessage += ' Panel Super Admin cargado.';
+        break;
+      case 'client_admin':
+        welcomeMessage += ` Gestionando ${context.clientName}.`;
+        break;
+      case 'hotel_manager':
+        welcomeMessage += ' Panel de gestión de hotel listo.';
+        break;
+      default:
+        welcomeMessage += ' Sistema cargado correctamente.';
+    }
+    
     setTimeout(() => {
-      window.location.reload();
-    }, 500);
-    
-  } else {
-    console.log('✅ Ya se recargó - Mostrando aplicación directamente...');
-    
-    // Limpiar flag
-    sessionStorage.removeItem('appReloaded');
-    
-    // Mostrar aplicación sin recargar
-    const loginScreen = document.getElementById('loginScreen');
-    const appScreen = document.getElementById('app');
-    
-    if (loginScreen && appScreen) {
-      loginScreen.style.display = 'none';
-      appScreen.style.display = 'block';
-    }
-    
-    // Inicializar app
-    if (typeof initializeAuthenticatedApp === 'function') {
-      initializeAuthenticatedApp();
-    }
-  }
-},
+      console.log(`🎉 ${welcomeMessage}`);
+      // Aquí podrías mostrar una notificación visual si quieres
+    }, 1000);
+  },
   
   // ====================================================
   // UTILIDADES DE UI
@@ -526,7 +739,7 @@ const FirebaseAuthModule = {
     }
     
     this.isInitialized = false;
-    console.log('🧹 Firebase Auth Module limpiado');
+    console.log('🧹 Firebase Auth Module Multi-Cliente limpiado');
   }
 };
 
@@ -536,4 +749,4 @@ const FirebaseAuthModule = {
 
 window.FirebaseAuthModule = FirebaseAuthModule;
 
-console.log('🔥 Firebase Auth Module cargado');
+console.log('🔥 Firebase Auth Module Multi-Cliente cargado');
